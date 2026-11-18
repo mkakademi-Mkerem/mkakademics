@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Öğretmen – Sınıf Yarışması</title>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+:root{--bg:#0f1117;--card:#1a1d26;--card2:#22263a;--accent:#6c63ff;--accent2:#ff6584;
+  --green:#4ade80;--red:#f87171;--yellow:#fbbf24;--text:#e2e8f0;--muted:#8892a4;--border:#2d3350;--r:14px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh}
+.hidden{display:none!important}
+header{background:var(--card);border-bottom:1px solid var(--border);padding:13px 22px;
+  display:flex;align-items:center;gap:12px}
+header h1{font-size:1.1rem;font-weight:700;flex:1}
+.badge{background:var(--accent);color:#fff;padding:3px 10px;border-radius:20px;font-size:.72rem;font-weight:600}
+#room-hdr{font-weight:800;font-size:1.1rem;color:var(--accent);letter-spacing:.1em}
+main{padding:20px;max-width:1100px;margin:0 auto}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:18px;margin-bottom:14px}
+.card h2{font-size:.95rem;font-weight:600;color:var(--accent);margin-bottom:12px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:620px){.g2{grid-template-columns:1fr}}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:10px 18px;border-radius:9px;border:none;
+  font-size:.88rem;font-weight:600;cursor:pointer;transition:all .18s}
+.bp{background:var(--accent);color:#fff}.bp:hover{background:#5a51e8;transform:translateY(-1px)}
+.bg{background:var(--green);color:#0f1117}.bg:hover{background:#22c55e}
+.br{background:var(--red);color:#fff}.br:hover{background:#ef4444}
+.bo{background:transparent;border:1px solid var(--border);color:var(--text)}.bo:hover{background:var(--card2)}
+.bsm{padding:6px 12px;font-size:.8rem}
+.btn:disabled{opacity:.35;cursor:default;transform:none!important}
+.fg{margin-bottom:11px}
+.fg label{display:block;font-size:.78rem;color:var(--muted);margin-bottom:4px}
+input,select,textarea{width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);
+  border-radius:8px;padding:9px 12px;font-size:.88rem;outline:none;transition:border-color .2s}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+textarea{resize:vertical;min-height:60px}
+/* tabs */
+.tabs{display:flex;gap:3px;background:var(--card2);padding:3px;border-radius:9px;margin-bottom:16px}
+.tab{flex:1;padding:7px;text-align:center;border-radius:7px;cursor:pointer;font-size:.82rem;
+  font-weight:500;color:var(--muted);transition:all .18s}
+.tab.on{background:var(--card);color:var(--text);font-weight:600}
+/* question editor */
+.qi{background:var(--card2);border:1px solid var(--border);border-radius:9px;padding:12px;margin-bottom:8px}
+.qh{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.qn{background:var(--accent);color:#fff;border-radius:50%;width:24px;height:24px;
+  display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;flex-shrink:0}
+.opt-row{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:7px}
+.opt-inp{display:flex;align-items:center;gap:5px}
+.opt-inp input[type=radio]{width:auto;accent-color:var(--accent)}
+/* lobby */
+.code-big{font-size:3rem;font-weight:800;letter-spacing:.35em;color:var(--accent);text-align:center;padding:14px}
+.chip{background:var(--card2);border:1px solid var(--border);border-radius:20px;padding:4px 11px;
+  font-size:.82rem;display:inline-flex;align-items:center;gap:5px;margin:3px}
+/* game */
+.tbar{height:7px;background:var(--card2);border-radius:3px;overflow:hidden;margin-bottom:14px}
+.tfill{height:100%;background:var(--accent);border-radius:3px;transition:width .1s linear}
+.pbar{height:5px;background:var(--card2);border-radius:2px;overflow:hidden;flex:1}
+.pfill{height:100%;background:var(--green);border-radius:2px;transition:width .3s}
+.lbrow{display:flex;align-items:center;gap:9px;padding:7px 11px;background:var(--card2);border-radius:7px;margin-bottom:4px;font-size:.85rem}
+.lbrank{width:22px;font-weight:700;color:var(--muted)}
+.gold{color:var(--yellow)}.silver{color:#94a3b8}.bronze{color:#a16207}
+.lbname{flex:1}.lbsc{font-weight:700;color:var(--accent)}
+/* stats */
+.qstat{background:var(--card2);border-radius:9px;padding:11px;margin-bottom:7px}
+.sbar{height:9px;background:var(--border);border-radius:4px;overflow:hidden;flex:1}
+.sfill{height:100%;border-radius:4px}
+.sg{background:var(--green)}.sy{background:var(--yellow)}.sr{background:var(--red)}
+/* modal */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:50}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:24px;text-align:center;width:300px}
+.modal img{max-width:200px;border-radius:8px;background:#fff;padding:6px}
+.alert{padding:9px 13px;border-radius:7px;font-size:.84rem;margin-bottom:10px}
+.ai{background:#1e3a5f;border:1px solid #3b82f6;color:#93c5fd}
+</style>
+</head>
+<body>
+<header>
+  <span>🎮</span><h1>Sınıf Yarışması</h1>
+  <span class="badge" id="phase-badge">Öğretmen</span>
+  <span id="room-hdr"></span>
+</header>
+<main>
+
+<!-- SETUP -->
+<div id="s-setup">
+  <div class="tabs">
+    <div class="tab on" onclick="tab('q')">📝 Sorular</div>
+    <div class="tab" onclick="tab('cfg')">⚙️ Ayarlar</div>
+  </div>
+
+  <div id="t-q">
+    <div class="card">
+      <h2>Yeni Soru Ekle</h2>
+      <div class="fg"><label>Soru Tipi</label>
+        <select id="qtype" onchange="refreshForm()">
+          <option value="mc">Çoktan Seçmeli (4 şık)</option>
+          <option value="tf">Doğru / Yanlış</option>
+        </select>
+      </div>
+      <div class="fg"><label>Soru</label>
+        <textarea id="qtext" placeholder="Soruyu buraya yazın..."></textarea>
+      </div>
+      <div id="mc-area"><div class="opt-row" id="opts"></div></div>
+      <div id="tf-area" class="hidden">
+        <div class="fg"><label>Doğru Cevap</label>
+          <select id="tf-ans"><option value="0">Doğru ✓</option><option value="1">Yanlış ✗</option></select>
+        </div>
+      </div>
+      <div class="fg" style="margin-top:10px"><label>Süre (saniye)</label>
+        <input type="number" id="qtime" value="20" min="5" max="120" style="width:110px">
+      </div>
+      <div style="display:flex;gap:7px;margin-top:10px;flex-wrap:wrap">
+        <button class="btn bp" onclick="addQ()">+ Ekle</button>
+        <button class="btn bo bsm" onclick="clearQForm()">Temizle</button>
+        <button class="btn bo bsm" onclick="loadSample()">🎲 Örnek Yükle</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Sorular (<span id="qcount">0</span>)</h2>
+      <div id="qlist"><p style="color:var(--muted);text-align:center;padding:16px">Henüz soru yok</p></div>
+      <div style="display:flex;gap:7px;margin-top:10px;flex-wrap:wrap">
+        <button class="btn bo bsm" onclick="document.getElementById('fimp').click()">📂 JSON Yükle</button>
+        <button class="btn bo bsm" onclick="exportQ()">💾 JSON Kaydet</button>
+      </div>
+      <input type="file" id="fimp" accept=".json" class="hidden" onchange="importQ(event)">
+    </div>
+
+    <button class="btn bg" onclick="createRoom()" style="width:100%;padding:14px;font-size:.95rem;margin-top:4px">
+      🚀 Oda Oluştur ve Lobiye Geç
+    </button>
+  </div>
+
+  <div id="t-cfg" class="hidden">
+    <div class="card">
+      <h2>Oyun Ayarları</h2>
+      <div class="g2">
+        <div class="fg"><label>Maks. Puan</label><input type="number" id="cfg-max" value="1000" min="100" step="100"></div>
+        <div class="fg"><label>Min. Puan</label><input type="number" id="cfg-min" value="100" min="0" step="50"></div>
+        <div class="fg"><label>Varsayılan Süre (sn)</label><input type="number" id="cfg-time" value="20" min="5"></div>
+        <div class="fg"><label>Seri Bonusu</label>
+          <select id="cfg-streak"><option value="1">Açık</option><option value="0">Kapalı</option></select>
+        </div>
+      </div>
+      <p style="font-size:.78rem;color:var(--muted)">Seri bonusu: Her art arda doğru cevap %10 çarpan ekler (max ×2)</p>
+    </div>
+  </div>
+</div>
+
+<!-- LOBBY -->
+<div id="s-lobby" class="hidden">
+  <div class="g2">
+    <div class="card">
+      <h2>Oda Kodu – Tahtaya Yaz!</h2>
+      <div class="code-big" id="code-big">------</div>
+      <div class="alert ai">Öğrenciler <strong id="stu-url"></strong> adresine gitsin</div>
+      <div style="display:flex;gap:7px;flex-wrap:wrap">
+        <button class="btn bo" onclick="showQR()">📱 QR Göster</button>
+        <button class="btn bg" id="btn-startgame" onclick="startGame()">▶ Oyunu Başlat</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Katılımcılar (<span id="stu-count">0</span>)</h2>
+      <div id="stu-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- QUESTION (live) -->
+<div id="s-question" class="hidden">
+  <div class="g2">
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:.82rem;color:var(--muted)">
+        <span>Soru <span id="qi">1</span>/<span id="qtot">?</span></span>
+        <span style="flex:1"></span>
+        <span id="timer-num" style="font-weight:800;font-size:1.1rem;color:var(--yellow)">20</span>
+      </div>
+      <div class="tbar"><div class="tfill" id="tfill"></div></div>
+      <div id="qdisplay" style="font-size:1.05rem;font-weight:600;line-height:1.5;margin-bottom:12px"></div>
+      <div id="qopts" style="display:flex;flex-direction:column;gap:5px;margin-bottom:14px"></div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:.82rem;color:var(--muted);margin-bottom:12px">
+        <span>Cevaplayan:</span>
+        <div class="pbar"><div class="pfill" id="pfill"></div></div>
+        <span id="pcount">0/0</span>
+      </div>
+      <div style="display:flex;gap:7px">
+        <button class="btn bp" onclick="advanceToResults()">⏭ Sonuçları Göster</button>
+        <button class="btn br bsm" onclick="confirmEnd()">⏹ Bitir</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>🏆 Anlık Liderlik</h2>
+      <div id="live-lb"></div>
+    </div>
+  </div>
+</div>
+
+<!-- RESULTS (between questions) -->
+<div id="s-results" class="hidden">
+  <div class="card">
+    <h2>Soru Sonucu</h2>
+    <div id="res-correct" class="alert ai" style="margin-bottom:14px"></div>
+    <div id="res-lb"></div>
+    <div style="display:flex;gap:7px;margin-top:14px">
+      <button class="btn bp" onclick="nextQuestion()">▶ Sonraki Soru</button>
+      <button class="btn br bsm" onclick="confirmEnd()">⏹ Oyunu Bitir</button>
+    </div>
+  </div>
+</div>
+
+<!-- PODIUM -->
+<div id="s-podium" class="hidden">
+  <div class="card" style="text-align:center;padding:28px">
+    <div style="font-size:1.6rem;font-weight:800;margin-bottom:4px">🏆 Oyun Bitti!</div>
+    <p style="color:var(--muted);margin-bottom:20px">Final Sıralaması</p>
+    <div id="podium-top" style="margin-bottom:20px"></div>
+    <div id="podium-full" style="text-align:left;margin-bottom:20px"></div>
+    <button class="btn bo" onclick="toggleAnalytics()">📊 Soru Analitiği</button>
+    <button class="btn bp" onclick="newGame()" style="margin-left:8px">🔄 Yeni Oyun</button>
+  </div>
+  <div id="analytics" class="card hidden">
+    <h2>📊 Soru Bazlı Analitik</h2>
+    <div id="analytics-list"></div>
+  </div>
+</div>
+
+</main>
+
+<!-- QR Modal -->
+<div class="overlay hidden" id="qr-modal" onclick="hideQR()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <h3 style="margin-bottom:10px">📱 QR ile Katıl</h3>
+    <img id="qr-img" src="" alt="QR">
+    <p style="color:var(--muted);font-size:.82rem;margin-top:10px">Öğrenciler bu kodu taratarak katılır</p>
+    <button class="btn bo bsm" style="margin-top:10px" onclick="hideQR()">Kapat</button>
+  </div>
+</div>
+
+<script>
+// ── Supabase ───────────────────────────────────
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ── State ──────────────────────────────────────
+let questions = JSON.parse(localStorage.getItem('quiz_questions') || '[]');
+let roomCode = null;
+let roomId   = null;
+let timerInt = null;
+let channel  = null;
+let ansCount = 0;
+let stuCount = 0;
+let analyticsData = [];
+let currentQData  = null;
+
+// ── Init ───────────────────────────────────────
+refreshForm();
+renderQList();
+
+// ── Tabs ───────────────────────────────────────
+function tab(t) {
+  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('on',['q','cfg'][i]===t));
+  document.getElementById('t-q').classList.toggle('hidden', t!=='q');
+  document.getElementById('t-cfg').classList.toggle('hidden', t!=='cfg');
+}
+
+// ── Question Form ──────────────────────────────
+const COLORS = ['#6c63ff','#ff6584','#43b89c','#f59e0b'];
+const LABELS = ['A','B','C','D'];
+
+function refreshForm() {
+  const t = document.getElementById('qtype').value;
+  document.getElementById('mc-area').classList.toggle('hidden', t!=='mc');
+  document.getElementById('tf-area').classList.toggle('hidden', t!=='tf');
+  if (t==='mc') renderOptInputs();
+}
+
+function renderOptInputs(vals=['','','','']) {
+  document.getElementById('opts').innerHTML = vals.map((v,i)=>`
+    <div class="opt-inp">
+      <input type="radio" name="cor" value="${i}" id="r${i}" ${i===0?'checked':''}>
+      <label for="r${i}" style="color:var(--green);font-size:.72rem;font-weight:600">✓</label>
+      <input type="text" id="o${i}" value="${v}" placeholder="Şık ${LABELS[i]}">
+    </div>`).join('');
+}
+
+function getCorrect() {
+  const t = document.getElementById('qtype').value;
+  if (t==='mc') return document.querySelector('input[name=cor]:checked')?.value || '0';
+  return document.getElementById('tf-ans').value;
+}
+
+function addQ() {
+  const type = document.getElementById('qtype').value;
+  const text = document.getElementById('qtext').value.trim();
+  const time = parseInt(document.getElementById('qtime').value)||20;
+  if (!text) return alert('Soru metni boş!');
+  if (type==='mc') {
+    const opts = [0,1,2,3].map(i=>document.getElementById('o'+i).value.trim());
+    if (opts.some(o=>!o)) return alert('Tüm şıkları doldur!');
+    questions.push({type,text,options:opts,correct:getCorrect(),timeLimit:time});
+  } else {
+    questions.push({type,text,options:['Doğru','Yanlış'],correct:getCorrect(),timeLimit:time});
+  }
+  saveQ(); renderQList(); clearQForm();
+}
+
+function removeQ(i) { questions.splice(i,1); saveQ(); renderQList(); }
+
+function saveQ() { localStorage.setItem('quiz_questions', JSON.stringify(questions)); }
+
+function renderQList() {
+  document.getElementById('qcount').textContent = questions.length;
+  document.getElementById('qlist').innerHTML = questions.length
+    ? questions.map((q,i)=>`
+      <div class="qi">
+        <div class="qh">
+          <div class="qn">${i+1}</div>
+          <div style="flex:1;font-size:.88rem">${q.text}</div>
+          <button class="btn br bsm" onclick="removeQ(${i})">✕</button>
+        </div>
+        <div style="font-size:.76rem;color:var(--muted)">
+          ${q.type==='mc'
+            ? q.options.map((o,oi)=>`<span style="margin-right:6px;${oi==q.correct?'color:var(--green);font-weight:600':''}">${LABELS[oi]}) ${o}</span>`).join('')
+            : `<span style="color:var(--green)">✓ ${q.correct==='0'?'Doğru':'Yanlış'}</span>`}
+          &nbsp;|&nbsp; ⏱ ${q.timeLimit}sn
+        </div>
+      </div>`)
+      .join('')
+    : '<p style="color:var(--muted);text-align:center;padding:16px">Henüz soru yok</p>';
+}
+
+function clearQForm() {
+  document.getElementById('qtext').value='';
+  renderOptInputs();
+}
+
+function loadSample() {
+  questions = [
+    {type:'mc',text:"Türkiye'nin başkenti neresidir?",options:['İstanbul','Ankara','İzmir','Bursa'],correct:'1',timeLimit:15},
+    {type:'tf',text:"Güneş batıdan doğar.",options:['Doğru','Yanlış'],correct:'1',timeLimit:10},
+    {type:'mc',text:"Suyun kimyasal formülü nedir?",options:['CO2','NaCl','H2O','O2'],correct:'2',timeLimit:15},
+    {type:'tf',text:"Filler memelilerdir.",options:['Doğru','Yanlış'],correct:'0',timeLimit:10},
+    {type:'mc',text:"Hangi gezegen Güneş'e en yakındır?",options:['Venüs','Dünya','Mars','Merkür'],correct:'3',timeLimit:20},
+  ];
+  saveQ(); renderQList();
+}
+
+function exportQ() {
+  if (!questions.length) return alert('Önce soru ekle!');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(questions,null,2)],{type:'application/json'}));
+  a.download='sorular.json'; a.click();
+}
+function importQ(e) {
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=ev=>{ try{questions=JSON.parse(ev.target.result);saveQ();renderQList();}catch{alert('Geçersiz JSON!');} };
+  r.readAsText(f);
+}
+
+// ── Room ───────────────────────────────────────
+function genCode() {
+  const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return Array.from({length:6},()=>c[Math.floor(Math.random()*c.length)]).join('');
+}
+
+function getSettings() {
+  return {
+    maxPoints: parseInt(document.getElementById('cfg-max').value)||1000,
+    minPoints: parseInt(document.getElementById('cfg-min').value)||100,
+    timePerQuestion: parseInt(document.getElementById('cfg-time').value)||20,
+    streakBonus: document.getElementById('cfg-streak').value==='1',
+  };
+}
+
+async function createRoom() {
+  if (!questions.length) return alert('Önce soru ekle!');
+  // Eski odaları temizle (24 saatten eski)
+  const yesterday = new Date(Date.now()-86400000).toISOString();
+  await sb.from('rooms').delete().lt('created_at', yesterday);
+
+  const code = genCode();
+  const { data, error } = await sb.from('rooms').insert({
+    code,
+    phase: 'lobby',
+    questions: questions,
+    settings: getSettings(),
+  }).select().single();
+
+  if (error) return alert('Oda oluşturulamadı: '+error.message);
+  roomCode = data.code;
+  roomId   = data.id;
+
+  document.getElementById('code-big').textContent = roomCode;
+  document.getElementById('room-hdr').textContent  = roomCode;
+  const origin = location.origin;
+  document.getElementById('stu-url').textContent = origin+'/student.html';
+  document.getElementById('phase-badge').textContent = 'Lobi';
+
+  subscribeRoom();
+  showScreen('lobby');
+}
+
+function subscribeRoom() {
+  channel = sb.channel('room-'+roomCode)
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'participants',filter:`room_code=eq.${roomCode}`},
+      ()=>refreshLobby())
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'answers',filter:`room_code=eq.${roomCode}`},
+      ()=>{ ansCount++; updateProgress(); })
+    .subscribe();
+}
+
+async function refreshLobby() {
+  const {data} = await sb.from('participants').select('name').eq('room_code',roomCode);
+  stuCount = data?.length||0;
+  document.getElementById('stu-count').textContent = stuCount;
+  document.getElementById('stu-list').innerHTML = (data||[]).map(p=>`<span class="chip">👤 ${p.name}</span>`).join('');
+}
+
+// ── Game Flow ──────────────────────────────────
+async function startGame() {
+  await sb.from('rooms').update({phase:'question',current_question:0,question_start_time:new Date().toISOString()}).eq('code',roomCode);
+  loadQuestion(0);
+}
+
+function loadQuestion(idx) {
+  const q = questions[idx];
+  currentQData = q;
+  ansCount = 0;
+  document.getElementById('qi').textContent = idx+1;
+  document.getElementById('qtot').textContent = questions.length;
+  document.getElementById('qdisplay').textContent = q.text;
+  document.getElementById('qopts').innerHTML = (q.options||[]).map((o,i)=>`
+    <div style="display:flex;align-items:center;gap:7px;padding:8px 11px;background:var(--card2);border-radius:7px;font-size:.85rem">
+      <span style="font-weight:700;color:${COLORS[i%COLORS.length]}">${LABELS[i]||i}</span> ${o}
+    </div>`).join('');
+  updateProgress();
+  startTimer(q.timeLimit||20);
+  showScreen('question');
+  document.getElementById('phase-badge').textContent = `Soru ${idx+1}/${questions.length}`;
+}
+
+function updateProgress() {
+  const pct = stuCount ? Math.round(ansCount/stuCount*100) : 0;
+  document.getElementById('pfill').style.width = pct+'%';
+  document.getElementById('pcount').textContent = `${ansCount}/${stuCount}`;
+}
+
+function startTimer(secs) {
+  clearInterval(timerInt);
+  let rem = secs;
+  const fill = document.getElementById('tfill');
+  const num  = document.getElementById('timer-num');
+  fill.style.width='100%'; fill.style.background='var(--accent)'; num.textContent=secs;
+  timerInt = setInterval(()=>{
+    rem-=.1;
+    fill.style.width=Math.max(0,rem/secs*100)+'%';
+    num.textContent=Math.ceil(rem);
+    if (rem<=5) fill.style.background='var(--red)';
+    else if (rem<=10) fill.style.background='var(--yellow)';
+    if (rem<=0) { clearInterval(timerInt); advanceToResults(); }
+  },100);
+}
+
+async function advanceToResults() {
+  clearInterval(timerInt);
+  const {data:room} = await sb.from('rooms').select('current_question').eq('code',roomCode).single();
+  const idx = room.current_question;
+  await sb.from('rooms').update({phase:'results'}).eq('code',roomCode);
+
+  const q = questions[idx];
+  const correctLabel = q.options?.[parseInt(q.correct)] || (q.correct==='0'?'Doğru':'Yanlış');
+  document.getElementById('res-correct').innerHTML = `✓ Doğru Cevap: <strong>${correctLabel}</strong>`;
+
+  // Leaderboard
+  const {data:parts} = await sb.from('participants').select('name,score,streak').eq('room_code',roomCode).order('score',{ascending:false});
+  document.getElementById('res-lb').innerHTML = renderLB(parts||[]);
+  document.getElementById('live-lb').innerHTML = renderLB((parts||[]).slice(0,8));
+
+  showScreen('results');
+  document.getElementById('phase-badge').textContent = 'Sonuç';
+}
+
+async function nextQuestion() {
+  const {data:room} = await sb.from('rooms').select('current_question').eq('code',roomCode).single();
+  const next = room.current_question + 1;
+  if (next >= questions.length) return endGame();
+  await sb.from('rooms').update({phase:'question',current_question:next,question_start_time:new Date().toISOString()}).eq('code',roomCode);
+  loadQuestion(next);
+}
+
+async function endGame() {
+  clearInterval(timerInt);
+  await sb.from('rooms').update({phase:'podium'}).eq('code',roomCode);
+  const {data:parts} = await sb.from('participants').select('name,score').eq('room_code',roomCode).order('score',{ascending:false});
+  const lb = parts||[];
+
+  const medals=['🥇','🥈','🥉'];
+  document.getElementById('podium-top').innerHTML = lb.slice(0,3).map((p,i)=>`
+    <div style="display:inline-block;text-align:center;margin:0 10px">
+      <div style="font-size:${i===0?'2rem':'1.5rem'}">${medals[i]}</div>
+      <div style="background:var(--card2);border:${i===0?'2px solid var(--yellow)':'1px solid var(--border)'};border-radius:9px;padding:10px 14px;margin-top:6px">
+        <div style="font-weight:700">${p.name}</div>
+        <div style="color:var(--accent);font-weight:800">${p.score.toLocaleString()}</div>
+      </div>
+    </div>`).join('');
+
+  document.getElementById('podium-full').innerHTML = `<div style="margin-top:16px">${renderLB(lb)}</div>`;
+
+  // Analytics
+  analyticsData = await buildAnalytics();
+  showScreen('podium');
+  document.getElementById('phase-badge').textContent = 'Bitti!';
+}
+
+async function buildAnalytics() {
+  const {data:ans} = await sb.from('answers').select('*').eq('room_code',roomCode);
+  return questions.map((q,i)=>{
+    const qAns = (ans||[]).filter(a=>a.question_index===i);
+    const correct = qAns.filter(a=>a.is_correct).length;
+    const rate = qAns.length ? Math.round(correct/qAns.length*100) : 0;
+    const avgTime = qAns.length ? Math.round(qAns.reduce((s,a)=>s+(a.time_taken_ms||0),0)/qAns.length) : 0;
+    return {text:q.text,correct,total:qAns.length,rate,avgTime};
+  });
+}
+
+function toggleAnalytics() {
+  const el = document.getElementById('analytics');
+  el.classList.toggle('hidden');
+  if (!el.classList.contains('hidden')) {
+    document.getElementById('analytics-list').innerHTML = analyticsData.map((a,i)=>`
+      <div class="qstat">
+        <div style="font-size:.85rem;font-weight:600">${i+1}. ${a.text}</div>
+        <div style="display:flex;align-items:center;gap:7px;margin-top:5px;font-size:.78rem">
+          <span style="color:var(--muted)">${a.correct}/${a.total} doğru</span>
+          <div class="sbar"><div class="sfill ${a.rate>=70?'sg':a.rate>=40?'sy':'sr'}" style="width:${a.rate}%"></div></div>
+          <span style="font-weight:700">${a.rate}%</span>
+        </div>
+        ${a.avgTime?`<div style="font-size:.73rem;color:var(--muted)">Ort. süre: ${(a.avgTime/1000).toFixed(1)}sn</div>`:''}
+      </div>`).join('');
+  }
+}
+
+function renderLB(arr) {
+  const medals=['🥇','🥈','🥉'];
+  return arr.map((p,i)=>`
+    <div class="lbrow">
+      <span class="lbrank ${i===0?'gold':i===1?'silver':i===2?'bronze':''}">${medals[i]||i+1}</span>
+      <span class="lbname">${p.name}</span>
+      ${p.streak>1?`<span style="color:var(--yellow);font-size:.75rem">🔥${p.streak}</span>`:''}
+      <span class="lbsc">${(p.score||0).toLocaleString()}</span>
+    </div>`).join('');
+}
+
+function confirmEnd() { if(confirm('Oyunu bitirmek istediğine emin misin?')) endGame(); }
+
+function newGame() {
+  roomCode=null; roomId=null;
+  channel?.unsubscribe();
+  document.getElementById('room-hdr').textContent='';
+  document.getElementById('phase-badge').textContent='Öğretmen';
+  showScreen('setup');
+}
+
+// ── QR ─────────────────────────────────────────
+async function showQR() {
+  const url = location.origin+'/student.html';
+  // Simple QR via Google Charts API (no backend needed)
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
+  document.getElementById('qr-img').src = qrUrl;
+  document.getElementById('qr-modal').classList.remove('hidden');
+}
+function hideQR() { document.getElementById('qr-modal').classList.add('hidden'); }
+
+// ── Screens ─────────────────────────────────────
+function showScreen(s) {
+  ['setup','lobby','question','results','podium'].forEach(n=>
+    document.getElementById('s-'+n).classList.toggle('hidden',n!==s));
+}
+</script>
+</body>
+</html>
