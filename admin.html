@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>mkakademics – Yönetici Paneli</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#1a1a2e;color:#fff;min-height:100vh;}
+:root{--accent:#e040fb;--card:#16213e;--red:#e21b3c;--green:#26890c;--bg:#1a1a2e;}
+.topbar{background:var(--card);border-bottom:1px solid #2a2a4a;padding:14px 24px;display:flex;align-items:center;gap:14px;}
+.logo{font-size:1.3rem;font-weight:900;background:linear-gradient(to right,var(--accent),#7c4dff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.topbar-title{font-size:.9rem;color:#888;}
+.topbar-user{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:.85rem;color:#aaa;}
+.btn-logout{background:none;border:1px solid #3a3a5a;color:#888;padding:6px 12px;border-radius:8px;cursor:pointer;font-size:.8rem;transition:all .2s;}
+.btn-logout:hover{border-color:var(--red);color:var(--red);}
+.main{max-width:860px;margin:0 auto;padding:32px 20px;}
+.section-title{font-size:1.1rem;font-weight:700;margin-bottom:20px;display:flex;align-items:center;gap:8px;}
+/* Add teacher card */
+.add-card{background:var(--card);border-radius:16px;padding:24px;border:1px solid #2a2a4a;margin-bottom:32px;}
+.add-card h3{font-size:.95rem;color:#ccc;margin-bottom:18px;}
+.form-row{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end;}
+.f-group label{display:block;font-size:.75rem;color:#888;margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px;}
+.f-group input,.f-group select{width:100%;background:#0f0f23;border:2px solid #2a2a4a;color:#fff;padding:10px 12px;border-radius:10px;font-size:.88rem;outline:none;transition:border-color .2s;}
+.f-group input:focus,.f-group select:focus{border-color:var(--accent);}
+.f-group select option{background:#1a1a2e;}
+.btn-add{padding:10px 20px;background:var(--accent);color:#fff;border:none;border-radius:10px;cursor:pointer;font-weight:700;font-size:.88rem;white-space:nowrap;transition:all .2s;height:40px;}
+.btn-add:hover{opacity:.9;}
+.btn-add:disabled{opacity:.4;cursor:not-allowed;}
+.err-add{color:var(--red);font-size:.8rem;margin-top:8px;}
+/* Table */
+.table-wrap{background:var(--card);border-radius:16px;border:1px solid #2a2a4a;overflow:hidden;}
+table{width:100%;border-collapse:collapse;}
+thead{background:#0f0f23;}
+th{padding:12px 16px;font-size:.78rem;color:#888;text-transform:uppercase;letter-spacing:.5px;text-align:left;font-weight:600;}
+td{padding:14px 16px;border-top:1px solid #1e1e3a;font-size:.88rem;}
+tr:hover td{background:rgba(255,255,255,.02);}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;}
+.badge-admin{background:rgba(224,64,251,.2);color:#e040fb;border:1px solid rgba(224,64,251,.3);}
+.badge-teacher{background:rgba(19,104,206,.2);color:#5b9cf6;border:1px solid rgba(19,104,206,.3);}
+.btn-del{background:none;border:1px solid #3a3a5a;color:#888;padding:5px 12px;border-radius:7px;cursor:pointer;font-size:.78rem;transition:all .2s;}
+.btn-del:hover{border-color:var(--red);color:var(--red);}
+.btn-del:disabled{opacity:.3;cursor:not-allowed;}
+.empty-row td{text-align:center;color:#555;padding:32px;}
+/* Toast */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#333;color:#fff;padding:12px 24px;border-radius:12px;font-size:.9rem;transition:transform .3s;z-index:999;white-space:nowrap;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+/* Change password modal */
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:center;justify-content:center;padding:16px;}
+.modal.open{display:flex;}
+.modal-box{background:var(--card);border-radius:18px;padding:28px;max-width:380px;width:100%;border:1px solid #2a2a4a;}
+.modal-box h3{margin-bottom:20px;font-size:1rem;}
+.modal-box .f-group{margin-bottom:14px;}
+.modal-actions{display:flex;gap:10px;margin-top:20px;}
+.btn-secondary{padding:10px 18px;background:#2a2a4a;color:#ccc;border:none;border-radius:10px;cursor:pointer;font-size:.88rem;}
+.btn-secondary:hover{background:#3a3a5a;}
+@media(max-width:600px){.form-row{grid-template-columns:1fr 1fr;}.form-row .btn-add{grid-column:1/-1;width:100%;}}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <span class="logo">mkakademics</span>
+  <span class="topbar-title">/ Yönetici Paneli</span>
+  <div class="topbar-user">
+    <span id="topbar-name">—</span>
+    <button class="btn-logout" onclick="logout()">Çıkış</button>
+  </div>
+</div>
+
+<div class="main">
+  <div class="section-title">👤 Yeni Öğretmen Ekle</div>
+  <div class="add-card">
+    <h3>Sisteme yeni bir kullanıcı ekleyin</h3>
+    <div class="form-row">
+      <div class="f-group">
+        <label>Ad Soyad</label>
+        <input type="text" id="new-fullname" placeholder="Ali Veli">
+      </div>
+      <div class="f-group">
+        <label>Kullanıcı Adı</label>
+        <input type="text" id="new-username" placeholder="aliveli" autocapitalize="none" autocorrect="off">
+      </div>
+      <div class="f-group">
+        <label>Şifre</label>
+        <input type="text" id="new-password" placeholder="şifre123">
+      </div>
+      <button class="btn-add" id="btn-add-user" onclick="addUser()">➕ Ekle</button>
+    </div>
+    <div class="err-add" id="err-add"></div>
+  </div>
+
+  <div class="section-title">👥 Kullanıcılar (<span id="user-count">0</span>)</div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Ad Soyad</th>
+          <th>Kullanıcı Adı</th>
+          <th>Rol</th>
+          <th>Eklenme</th>
+          <th>İşlem</th>
+        </tr>
+      </thead>
+      <tbody id="users-tbody">
+        <tr class="empty-row"><td colspan="5">Yükleniyor…</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Şifre değiştirme modal -->
+<div id="pw-modal" class="modal">
+  <div class="modal-box">
+    <h3>🔑 Şifre Değiştir — <span id="pw-modal-user"></span></h3>
+    <div class="f-group">
+      <label>Yeni Şifre</label>
+      <input type="text" id="pw-new" placeholder="yenisifre123">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-add" onclick="confirmChangePw()">Kaydet</button>
+      <button class="btn-secondary" onclick="closePwModal()">İptal</button>
+    </div>
+    <div class="err-add" id="err-pw"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="/config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let currentSession=null;
+let pwTargetId=null;
+
+// Auth guard
+(function(){
+  try{
+    const s=JSON.parse(localStorage.getItem('mk_session')||'null');
+    if(!s||Date.now()-s.ts>86400000){localStorage.removeItem('mk_session');window.location.href='/login?next=/admin';return;}
+    if(s.role!=='admin'){window.location.href='/teacher';return;}
+    currentSession=s;
+    document.getElementById('topbar-name').textContent=s.fullName||s.username;
+  }catch{window.location.href='/login?next=/admin';}
+})();
+
+async function sha256(str){
+  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+async function loadUsers(){
+  const{data,error}=await sb.from('users').select('*').order('created_at',{ascending:true});
+  if(error){toast('❌ Kullanıcılar yüklenemedi');return;}
+  renderUsers(data);
+}
+
+function renderUsers(users){
+  document.getElementById('user-count').textContent=users.length;
+  const tbody=document.getElementById('users-tbody');
+  if(!users.length){tbody.innerHTML='<tr class="empty-row"><td colspan="5">Henüz kullanıcı yok.</td></tr>';return;}
+  tbody.innerHTML=users.map(u=>{
+    const isSelf=u.username===currentSession.username;
+    const date=new Date(u.created_at).toLocaleDateString('tr-TR');
+    return `<tr>
+      <td>${u.full_name||'—'}</td>
+      <td><code>${u.username}</code></td>
+      <td><span class="badge badge-${u.role}">${u.role==='admin'?'Admin':'Öğretmen'}</span></td>
+      <td>${date}</td>
+      <td style="display:flex;gap:6px;">
+        <button class="btn-del" onclick="openPwModal('${u.id}','${u.username}')">🔑 Şifre</button>
+        <button class="btn-del" onclick="deleteUser('${u.id}','${u.username}')" ${isSelf?'disabled title="Kendinizi silemezsiniz"':''}>🗑 Sil</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function addUser(){
+  const fullname=document.getElementById('new-fullname').value.trim();
+  const username=document.getElementById('new-username').value.trim().toLowerCase();
+  const password=document.getElementById('new-password').value.trim();
+  const errEl=document.getElementById('err-add');
+  const btn=document.getElementById('btn-add-user');
+  errEl.textContent='';
+  if(!username||username.length<2){errEl.textContent='Kullanıcı adı en az 2 karakter olmalı.';return;}
+  if(!password||password.length<4){errEl.textContent='Şifre en az 4 karakter olmalı.';return;}
+  btn.disabled=true;
+  const hash=await sha256(password);
+  const{error}=await sb.from('users').insert({username,password_hash:hash,role:'teacher',full_name:fullname||null});
+  btn.disabled=false;
+  if(error){
+    if(error.code==='23505')errEl.textContent='❌ Bu kullanıcı adı zaten alınmış.';
+    else errEl.textContent='❌ '+error.message;
+    return;
+  }
+  document.getElementById('new-fullname').value='';
+  document.getElementById('new-username').value='';
+  document.getElementById('new-password').value='';
+  toast('✅ '+username+' eklendi!');
+  loadUsers();
+}
+
+async function deleteUser(id,username){
+  if(!confirm(username+' kullanıcısını silmek istediğinizden emin misiniz?'))return;
+  const{error}=await sb.from('users').delete().eq('id',id);
+  if(error){toast('❌ Silinemedi');return;}
+  toast('🗑 '+username+' silindi');
+  loadUsers();
+}
+
+function openPwModal(id,username){
+  pwTargetId=id;
+  document.getElementById('pw-modal-user').textContent=username;
+  document.getElementById('pw-new').value='';
+  document.getElementById('err-pw').textContent='';
+  document.getElementById('pw-modal').classList.add('open');
+}
+function closePwModal(){document.getElementById('pw-modal').classList.remove('open');pwTargetId=null;}
+
+async function confirmChangePw(){
+  const newPw=document.getElementById('pw-new').value.trim();
+  const errEl=document.getElementById('err-pw');
+  if(!newPw||newPw.length<4){errEl.textContent='Şifre en az 4 karakter olmalı.';return;}
+  const hash=await sha256(newPw);
+  const{error}=await sb.from('users').update({password_hash:hash}).eq('id',pwTargetId);
+  if(error){errEl.textContent='❌ '+error.message;return;}
+  toast('🔑 Şifre güncellendi!');
+  closePwModal();
+}
+
+let _toastTimer=null;
+function toast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer=setTimeout(()=>el.classList.remove('show'),3000);
+}
+
+function logout(){
+  localStorage.removeItem('mk_session');
+  window.location.href='/login';
+}
+
+loadUsers();
+</script>
+</body>
+</html>
