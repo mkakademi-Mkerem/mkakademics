@@ -186,8 +186,8 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#1a1a2e;color:#fff;m
     </div>
     <div id="question-list" class="question-list"></div>
     <button class="btn-add-q" onclick="addQuestion()">＋ Soru Ekle</button>
-    <button class="btn-import" onclick="document.getElementById('file-import').click()">📂 Dosyadan Yükle (Word / PDF / TXT)</button>
-    <input type="file" id="file-import" accept=".docx,.pdf,.txt" style="display:none" onchange="importFile(this)">
+    <button class="btn-import" onclick="document.getElementById('file-import').click()">📂 Dosyadan Yükle (Word / PDF / TXT / JSON)</button>
+    <input type="file" id="file-import" accept=".docx,.pdf,.txt,.json" style="display:none" onchange="importFile(this)">
     <button class="btn-import" onclick="document.getElementById('json-import').click()" style="margin-top:6px">📋 Soru Havuzundan Yükle (JSON)</button>
     <input type="file" id="json-import" accept=".json" style="display:none" onchange="importJson(this)">
     <span class="template-link" onclick="downloadTemplate()">📄 Boş şablon indir (.txt)</span>
@@ -724,7 +724,7 @@ async function importFile(input){
 
   let text='';
   try{
-    if(ext==='txt'){
+    if(ext==='txt'||ext==='json'){
       text=await file.text();
     } else if(ext==='docx'){
       if(!window.mammoth){throw new Error('mammoth.js yüklenemedi. Sayfayı yenileyip tekrar dene.');}
@@ -735,7 +735,7 @@ async function importFile(input){
       if(!window.pdfjsLib){throw new Error('pdf.js yüklenemedi. Sayfayı yenileyip tekrar dene.');}
       text=await extractPdfText(file);
     } else {
-      throw new Error('Desteklenmeyen dosya türü. .docx, .pdf veya .txt yükle.');
+      throw new Error('Desteklenmeyen dosya türü. .docx, .pdf, .txt veya .json yükle.');
     }
   } catch(e){
     document.getElementById('import-spinner').classList.remove('show');
@@ -761,7 +761,9 @@ async function importFile(input){
         <div class="import-q-num">${i+1}. ${{mc:'Çoktan Seçmeli',tf:'Doğru/Yanlış',matching:'Eşleştirme',ordering:'Sıralama'}[q.type]||q.type} · ${q.time}sn</div>
         <div class="import-q-txt">${esc(q.text)}</div>
         ${q.type==='mc'?q.options.filter(o=>o).map((o,j)=>`<span class="import-opt ${j===q.correct?'correct':'wrong'}">${'ABCD'[j]}) ${esc(o)}</span>`).join('')
-          :`<span class="import-opt ${q.correct===0?'correct':'wrong'}">Doğru</span><span class="import-opt ${q.correct===1?'correct':'wrong'}">Yanlış</span>`}
+          :q.type==='tf'?`<span class="import-opt ${q.correct===0?'correct':'wrong'}">Doğru</span><span class="import-opt ${q.correct===1?'correct':'wrong'}">Yanlış</span>`
+          :q.type==='matching'?(q.pairs||[]).map(p=>`<span class="import-opt wrong">${esc(p.l)} → ${esc(p.r)}</span>`).join('')
+          :(q.items||[]).map((it,j)=>`<span class="import-opt wrong">${j+1}. ${esc(it)}</span>`).join('')}
       </div>`).join('')
     +(qs.length>15?`<p style="color:#666;font-size:.78rem">…ve ${qs.length-15} soru daha</p>`:'');
 }
@@ -828,6 +830,25 @@ async function extractPdfText(file){
 }
 
 function parseQuestionsFromText(raw){
+  // ── JSON detection ──────────────────────────────────────────────────
+  const trimmed=raw.trim();
+  if(trimmed.startsWith('[')){
+    try{
+      const parsed=JSON.parse(trimmed);
+      if(Array.isArray(parsed)){
+        return parsed
+          .filter(q=>q&&typeof q==='object'&&['mc','tf','matching','ordering'].includes(q.type)&&q.text)
+          .map(q=>({
+            type:q.type, text:q.text||'', image:q.image||'', time:q.time||30,
+            ...(q.type==='mc'?{options:q.options||['','','',''],correct:q.correct??0}:{}),
+            ...(q.type==='tf'?{options:['Doğru','Yanlış'],correct:q.correct??0}:{}),
+            ...(q.type==='matching'?{pairs:(q.pairs||[]).filter(p=>p.l&&p.r)}:{}),
+            ...(q.type==='ordering'?{items:(q.items||[]).filter(x=>x)}:{}),
+          }));
+      }
+    }catch(e){}
+  }
+
   // Normalize: replace multiple blank lines with single, trim each line
   const lines=raw.split(/\r?\n/).map(l=>l.trim());
   const result=[];
