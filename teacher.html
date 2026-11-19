@@ -2,582 +2,567 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Öğretmen – Sınıf Yarışması</title>
-<script src="config.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>mkakademics – Öğretmen Paneli</title>
 <style>
-:root{--bg:#0f1117;--card:#1a1d26;--card2:#22263a;--accent:#6c63ff;--accent2:#ff6584;
-  --green:#4ade80;--red:#f87171;--yellow:#fbbf24;--text:#e2e8f0;--muted:#8892a4;--border:#2d3350;--r:14px}
-*{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh}
-.hidden{display:none!important}
-header{background:var(--card);border-bottom:1px solid var(--border);padding:13px 22px;
-  display:flex;align-items:center;gap:12px}
-header h1{font-size:1.1rem;font-weight:700;flex:1}
-.badge{background:var(--accent);color:#fff;padding:3px 10px;border-radius:20px;font-size:.72rem;font-weight:600}
-#room-hdr{font-weight:800;font-size:1.1rem;color:var(--accent);letter-spacing:.1em}
-main{padding:20px;max-width:1100px;margin:0 auto}
-.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:18px;margin-bottom:14px}
-.card h2{font-size:.95rem;font-weight:600;color:var(--accent);margin-bottom:12px}
-.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-@media(max-width:620px){.g2{grid-template-columns:1fr}}
-.btn{display:inline-flex;align-items:center;gap:5px;padding:10px 18px;border-radius:9px;border:none;
-  font-size:.88rem;font-weight:600;cursor:pointer;transition:all .18s}
-.bp{background:var(--accent);color:#fff}.bp:hover{background:#5a51e8;transform:translateY(-1px)}
-.bg{background:var(--green);color:#0f1117}.bg:hover{background:#22c55e}
-.br{background:var(--red);color:#fff}.br:hover{background:#ef4444}
-.bo{background:transparent;border:1px solid var(--border);color:var(--text)}.bo:hover{background:var(--card2)}
-.bsm{padding:6px 12px;font-size:.8rem}
-.btn:disabled{opacity:.35;cursor:default;transform:none!important}
-.fg{margin-bottom:11px}
-.fg label{display:block;font-size:.78rem;color:var(--muted);margin-bottom:4px}
-input,select,textarea{width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);
-  border-radius:8px;padding:9px 12px;font-size:.88rem;outline:none;transition:border-color .2s}
-input:focus,select:focus,textarea:focus{border-color:var(--accent)}
-textarea{resize:vertical;min-height:60px}
-/* tabs */
-.tabs{display:flex;gap:3px;background:var(--card2);padding:3px;border-radius:9px;margin-bottom:16px}
-.tab{flex:1;padding:7px;text-align:center;border-radius:7px;cursor:pointer;font-size:.82rem;
-  font-weight:500;color:var(--muted);transition:all .18s}
-.tab.on{background:var(--card);color:var(--text);font-weight:600}
-/* question editor */
-.qi{background:var(--card2);border:1px solid var(--border);border-radius:9px;padding:12px;margin-bottom:8px}
-.qh{display:flex;align-items:center;gap:8px;margin-bottom:6px}
-.qn{background:var(--accent);color:#fff;border-radius:50%;width:24px;height:24px;
-  display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;flex-shrink:0}
-.opt-row{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:7px}
-.opt-inp{display:flex;align-items:center;gap:5px}
-.opt-inp input[type=radio]{width:auto;accent-color:var(--accent)}
-/* lobby */
-.code-big{font-size:3rem;font-weight:800;letter-spacing:.35em;color:var(--accent);text-align:center;padding:14px}
-.chip{background:var(--card2);border:1px solid var(--border);border-radius:20px;padding:4px 11px;
-  font-size:.82rem;display:inline-flex;align-items:center;gap:5px;margin:3px}
-/* game */
-.tbar{height:7px;background:var(--card2);border-radius:3px;overflow:hidden;margin-bottom:14px}
-.tfill{height:100%;background:var(--accent);border-radius:3px;transition:width .1s linear}
-.pbar{height:5px;background:var(--card2);border-radius:2px;overflow:hidden;flex:1}
-.pfill{height:100%;background:var(--green);border-radius:2px;transition:width .3s}
-.lbrow{display:flex;align-items:center;gap:9px;padding:7px 11px;background:var(--card2);border-radius:7px;margin-bottom:4px;font-size:.85rem}
-.lbrank{width:22px;font-weight:700;color:var(--muted)}
-.gold{color:var(--yellow)}.silver{color:#94a3b8}.bronze{color:#a16207}
-.lbname{flex:1}.lbsc{font-weight:700;color:var(--accent)}
-/* stats */
-.qstat{background:var(--card2);border-radius:9px;padding:11px;margin-bottom:7px}
-.sbar{height:9px;background:var(--border);border-radius:4px;overflow:hidden;flex:1}
-.sfill{height:100%;border-radius:4px}
-.sg{background:var(--green)}.sy{background:var(--yellow)}.sr{background:var(--red)}
-/* modal */
-.overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:50}
-.modal{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:24px;text-align:center;width:300px}
-.modal img{max-width:200px;border-radius:8px;background:#fff;padding:6px}
-.alert{padding:9px 13px;border-radius:7px;font-size:.84rem;margin-bottom:10px}
-.ai{background:#1e3a5f;border:1px solid #3b82f6;color:#93c5fd}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#1a1a2e;color:#fff;min-height:100vh;overflow-x:hidden;}
+.screen{display:none;min-height:100vh;}
+.screen.active{display:flex;flex-direction:column;}
+:root{--red:#e21b3c;--blue:#1368ce;--yellow:#d89e00;--green:#26890c;--accent:#e040fb;--card:#16213e;--bg:#1a1a2e;}
+
+/* SETUP */
+#screen-setup{flex-direction:row !important;}
+.sidebar{width:300px;background:var(--card);padding:20px;overflow-y:auto;border-right:1px solid #2a2a4a;flex-shrink:0;display:flex;flex-direction:column;gap:12px;}
+.logo{font-size:1.4rem;font-weight:900;background:linear-gradient(to right,var(--accent),#7c4dff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.btn-new-quiz{width:100%;padding:10px;background:transparent;border:2px dashed var(--accent);color:var(--accent);border-radius:10px;cursor:pointer;font-size:.9rem;transition:all .2s;}
+.btn-new-quiz:hover{background:rgba(224,64,251,.1);}
+.sidebar-title{font-size:.85rem;color:#888;text-transform:uppercase;letter-spacing:1px;}
+.quiz-card{background:#0f0f23;border-radius:12px;padding:12px;cursor:pointer;border:2px solid transparent;transition:all .2s;}
+.quiz-card:hover{border-color:var(--accent);}
+.quiz-card.selected{border-color:var(--accent);background:#1e1e3f;}
+.quiz-card h3{font-size:.9rem;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.quiz-card p{font-size:.75rem;color:#888;}
+.main-editor{flex:1;padding:24px;overflow-y:auto;display:flex;flex-direction:column;gap:16px;}
+.editor-header{display:flex;gap:10px;align-items:center;}
+.quiz-title-input{flex:1;background:var(--card);border:2px solid #2a2a4a;color:#fff;padding:10px 16px;border-radius:10px;font-size:1.1rem;outline:none;transition:border-color .2s;}
+.quiz-title-input:focus{border-color:var(--accent);}
+.btn-primary{padding:10px 20px;background:var(--accent);color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:.9rem;font-weight:600;transition:all .2s;white-space:nowrap;}
+.btn-primary:hover{opacity:.9;transform:translateY(-1px);}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+.btn-success{padding:10px 20px;background:var(--green);color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:.9rem;font-weight:600;transition:all .2s;}
+.btn-success:hover{opacity:.9;}
+.btn-danger{padding:8px 14px;background:var(--red);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:.85rem;transition:all .2s;}
+.btn-danger:hover{opacity:.9;}
+.btn-secondary{padding:8px 16px;background:#2a2a4a;color:#ccc;border:none;border-radius:8px;cursor:pointer;font-size:.85rem;transition:all .2s;}
+.btn-secondary:hover{background:#3a3a5a;color:#fff;}
+.question-list{display:flex;flex-direction:column;gap:14px;}
+.q-card{background:var(--card);border-radius:14px;padding:16px;border:2px solid #2a2a4a;}
+.q-card-header{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+.q-number{width:26px;height:26px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;flex-shrink:0;}
+.q-type-select,.q-time-select{background:#0f0f23;border:1px solid #3a3a5a;color:#fff;padding:4px 8px;border-radius:6px;font-size:.8rem;cursor:pointer;}
+.q-text-input{width:100%;background:#0f0f23;border:1px solid #3a3a5a;color:#fff;padding:9px;border-radius:8px;font-size:.9rem;margin-bottom:8px;resize:vertical;min-height:56px;outline:none;transition:border-color .2s;}
+.q-text-input:focus{border-color:var(--accent);}
+.q-image-input{width:100%;background:#0f0f23;border:1px solid #3a3a5a;color:#888;padding:6px 10px;border-radius:8px;font-size:.78rem;margin-bottom:8px;outline:none;}
+.q-options{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:8px;}
+.q-option{display:flex;align-items:center;gap:7px;background:#0f0f23;border:2px solid transparent;border-radius:9px;padding:7px;}
+.q-option.oa{border-color:rgba(226,27,60,.4);} .q-option.ob{border-color:rgba(19,104,206,.4);} .q-option.oc{border-color:rgba(216,158,0,.4);} .q-option.od{border-color:rgba(38,137,12,.4);}
+.opt-shape{width:26px;height:26px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.9rem;border-radius:6px;}
+.oa .opt-shape{background:var(--red);} .ob .opt-shape{background:var(--blue);} .oc .opt-shape{background:var(--yellow);} .od .opt-shape{background:var(--green);}
+.opt-input{flex:1;background:transparent;border:none;color:#fff;font-size:.82rem;outline:none;}
+.opt-correct{width:18px;height:18px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;}
+.btn-add-q{width:100%;padding:13px;background:var(--card);border:2px dashed #3a3a5a;color:#888;border-radius:12px;cursor:pointer;font-size:.9rem;transition:all .2s;}
+.btn-add-q:hover{border-color:var(--accent);color:var(--accent);}
+.btn-start-game{width:100%;padding:16px;background:linear-gradient(135deg,var(--accent),#7c4dff);color:#fff;border:none;border-radius:14px;cursor:pointer;font-size:1.1rem;font-weight:700;transition:all .2s;letter-spacing:.5px;}
+.btn-start-game:hover{opacity:.9;transform:translateY(-2px);box-shadow:0 8px 25px rgba(224,64,251,.4);}
+.btn-start-game:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none;}
+.btn-icon{background:none;border:none;cursor:pointer;font-size:1rem;padding:3px 7px;border-radius:6px;color:#888;transition:background .2s;}
+.btn-icon:hover{background:#2a2a4a;color:#fff;}
+
+/* LOBBY */
+#screen-lobby{align-items:center;justify-content:center;background:linear-gradient(135deg,#1a1a2e,#16213e);padding:24px;gap:20px;}
+.lobby-top{display:flex;gap:24px;align-items:flex-start;width:100%;max-width:900px;}
+.pin-box{background:var(--card);border-radius:20px;padding:20px 32px;text-align:center;flex:1;}
+.pin-label{font-size:.85rem;color:#aaa;text-transform:uppercase;letter-spacing:2px;margin-bottom:4px;}
+.pin-code{font-size:3.2rem;font-weight:900;letter-spacing:8px;color:#fff;}
+.pin-url{font-size:.82rem;color:#aaa;margin-top:6px;}
+.qr-box{background:#fff;border-radius:16px;padding:10px;display:flex;align-items:center;justify-content:center;}
+.qr-box img{width:130px;height:130px;display:block;}
+.quiz-info-box{flex:1;background:var(--card);border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:10px;}
+.quiz-info-box h3{font-size:1.2rem;}
+.quiz-info-box p{color:#888;font-size:.88rem;}
+.player-count-line{font-size:.95rem;color:#888;}
+.player-grid{display:flex;flex-wrap:wrap;gap:9px;justify-content:center;max-width:900px;width:100%;min-height:80px;}
+.player-chip{background:var(--card);border-radius:50px;padding:7px 14px;font-size:.9rem;display:flex;align-items:center;gap:7px;animation:popIn .3s ease-out;}
+@keyframes popIn{from{transform:scale(0);opacity:0;}to{transform:scale(1);opacity:1;}}
+
+/* QUESTION */
+#screen-question{background:linear-gradient(135deg,#1a1a2e,#0f0f23);justify-content:space-between;}
+.q-top-bar{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;background:rgba(0,0,0,.35);}
+.q-progress-text{font-size:.9rem;color:#aaa;}
+.q-answer-count-text{font-size:.9rem;color:#aaa;}
+.q-timer-wrap{position:relative;width:84px;height:84px;}
+.q-timer-circle{transform:rotate(-90deg);}
+.timer-bg{fill:none;stroke:#2a2a4a;stroke-width:6;}
+.timer-arc{fill:none;stroke-width:6;stroke-linecap:round;transition:stroke-dashoffset 1s linear;}
+.q-timer-num{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:1.7rem;font-weight:900;}
+.q-main-area{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;gap:16px;}
+.q-image-preview{max-height:180px;border-radius:12px;object-fit:contain;}
+.q-text-display{font-size:1.8rem;font-weight:700;text-align:center;max-width:800px;line-height:1.3;}
+.q-answers-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;max-width:800px;padding:0 20px 20px;}
+.answer-display-btn{display:flex;align-items:center;gap:12px;padding:16px 18px;border-radius:14px;font-size:1.05rem;font-weight:600;border:none;color:#fff;cursor:default;transition:all .3s;}
+.answer-display-btn.oa{background:var(--red);} .answer-display-btn.ob{background:var(--blue);} .answer-display-btn.oc{background:var(--yellow);} .answer-display-btn.od{background:var(--green);}
+.answer-display-btn .sh{width:30px;height:30px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.25);border-radius:7px;font-size:1rem;}
+.answer-display-btn.correct-reveal{animation:correctPulse .5s ease;box-shadow:0 0 30px rgba(255,255,255,.4);}
+.answer-display-btn.wrong-reveal{opacity:.35;filter:grayscale(60%);}
+@keyframes correctPulse{0%{transform:scale(1);}50%{transform:scale(1.04);}100%{transform:scale(1);}}
+
+/* RESULTS */
+#screen-results{background:#1a1a2e;align-items:center;padding:24px;gap:18px;overflow-y:auto;}
+.results-header{font-size:1.4rem;font-weight:700;display:flex;align-items:center;gap:10px;}
+.answer-chart{display:flex;gap:8px;align-items:flex-end;height:150px;background:var(--card);padding:16px;border-radius:16px;width:100%;max-width:680px;}
+.chart-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;height:100%;justify-content:flex-end;}
+.chart-bar{width:100%;border-radius:7px 7px 0 0;transition:height .6s cubic-bezier(.34,1.56,.64,1);min-height:4px;}
+.chart-bar.oa{background:var(--red);} .chart-bar.ob{background:var(--blue);} .chart-bar.oc{background:var(--yellow);} .chart-bar.od{background:var(--green);}
+.chart-label-txt{font-size:.72rem;color:#aaa;text-align:center;}
+.chart-count-txt{font-size:.82rem;font-weight:700;}
+.leaderboard{width:100%;max-width:580px;background:var(--card);border-radius:16px;overflow:hidden;}
+.lb-header{padding:12px 18px;font-size:.85rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:1px;background:rgba(224,64,251,.1);}
+.lb-row{display:flex;align-items:center;padding:11px 18px;gap:12px;border-bottom:1px solid #2a2a4a;animation:slideIn .3s ease-out;}
+@keyframes slideIn{from{transform:translateX(-16px);opacity:0;}to{transform:translateX(0);opacity:1;}}
+.lb-rank{width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.85rem;flex-shrink:0;}
+.lb-rank.r1{color:#ffd700;} .lb-rank.r2{color:#c0c0c0;} .lb-rank.r3{color:#cd7f32;}
+.lb-avatar{font-size:1.2rem;} .lb-name{flex:1;font-weight:600;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;} .lb-score{font-weight:700;color:var(--accent);}
+.results-actions{display:flex;gap:10px;}
+
+/* PODIUM */
+#screen-podium{background:linear-gradient(135deg,#1a1a2e,#0f0f23);align-items:center;justify-content:center;padding:24px;gap:18px;overflow-y:auto;}
+.podium-title-text{font-size:2rem;font-weight:900;background:linear-gradient(to right,#ffd700,var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.podium-wrap{display:flex;align-items:flex-end;gap:8px;}
+.podium-slot{display:flex;flex-direction:column;align-items:center;gap:6px;}
+.podium-av{font-size:1.8rem;} .podium-nm{font-weight:700;font-size:.85rem;text-align:center;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;} .podium-sc{font-size:.75rem;color:#aaa;}
+.podium-block{display:flex;align-items:center;justify-content:center;font-size:1.3rem;font-weight:900;color:rgba(0,0,0,.5);border-radius:9px 9px 0 0;width:85px;}
+.full-results{width:100%;max-width:580px;background:var(--card);border-radius:16px;overflow:hidden;max-height:260px;overflow-y:auto;}
+.podium-actions{display:flex;gap:10px;}
+
+/* TOAST */
+.toast{position:fixed;bottom:18px;right:18px;background:#333;color:#fff;padding:11px 18px;border-radius:10px;font-size:.88rem;z-index:999;animation:fadeUp .3s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+.spacer{flex:1;}
 </style>
 </head>
 <body>
-<header>
-  <span>🎮</span><h1>Sınıf Yarışması</h1>
-  <span class="badge" id="phase-badge">Öğretmen</span>
-  <span id="room-hdr"></span>
-</header>
-<main>
 
-<!-- SETUP -->
-<div id="s-setup">
-  <div class="tabs">
-    <div class="tab on" onclick="tab('q')">📝 Sorular</div>
-    <div class="tab" onclick="tab('cfg')">⚙️ Ayarlar</div>
+<!-- ===== SETUP ===== -->
+<div id="screen-setup" class="screen active">
+  <div class="sidebar">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <span class="logo">mkakademics</span>
+      <span style="font-size:.7rem;background:rgba(224,64,251,.2);color:var(--accent);padding:3px 8px;border-radius:20px;font-weight:600">ÖĞRETMEN</span>
+    </div>
+    <button class="btn-new-quiz" onclick="newQuiz()">＋ Yeni Quiz Oluştur</button>
+    <div class="sidebar-title">📚 Quiz Kütüphanesi</div>
+    <div id="quiz-list"><p style="font-size:.82rem;color:#666">Henüz quiz yok.<br>Yukarıdan yeni quiz oluştur.</p></div>
   </div>
-
-  <div id="t-q">
-    <div class="card">
-      <h2>Yeni Soru Ekle</h2>
-      <div class="fg"><label>Soru Tipi</label>
-        <select id="qtype" onchange="refreshForm()">
-          <option value="mc">Çoktan Seçmeli (4 şık)</option>
-          <option value="tf">Doğru / Yanlış</option>
-        </select>
-      </div>
-      <div class="fg"><label>Soru</label>
-        <textarea id="qtext" placeholder="Soruyu buraya yazın..."></textarea>
-      </div>
-      <div id="mc-area"><div class="opt-row" id="opts"></div></div>
-      <div id="tf-area" class="hidden">
-        <div class="fg"><label>Doğru Cevap</label>
-          <select id="tf-ans"><option value="0">Doğru ✓</option><option value="1">Yanlış ✗</option></select>
-        </div>
-      </div>
-      <div class="fg" style="margin-top:10px"><label>Süre (saniye)</label>
-        <input type="number" id="qtime" value="20" min="5" max="120" style="width:110px">
-      </div>
-      <div style="display:flex;gap:7px;margin-top:10px;flex-wrap:wrap">
-        <button class="btn bp" onclick="addQ()">+ Ekle</button>
-        <button class="btn bo bsm" onclick="clearQForm()">Temizle</button>
-        <button class="btn bo bsm" onclick="loadSample()">🎲 Örnek Yükle</button>
-      </div>
+  <div class="main-editor">
+    <div class="editor-header">
+      <input type="text" id="quiz-title" class="quiz-title-input" placeholder="Quiz adını gir...">
+      <button class="btn-primary" onclick="saveQuiz()">💾 Kaydet</button>
+      <button class="btn-danger" id="btn-del-quiz" onclick="deleteQuiz()" style="display:none">🗑</button>
     </div>
-
-    <div class="card">
-      <h2>Sorular (<span id="qcount">0</span>)</h2>
-      <div id="qlist"><p style="color:var(--muted);text-align:center;padding:16px">Henüz soru yok</p></div>
-      <div style="display:flex;gap:7px;margin-top:10px;flex-wrap:wrap">
-        <button class="btn bo bsm" onclick="document.getElementById('fimp').click()">📂 JSON Yükle</button>
-        <button class="btn bo bsm" onclick="exportQ()">💾 JSON Kaydet</button>
-      </div>
-      <input type="file" id="fimp" accept=".json" class="hidden" onchange="importQ(event)">
-    </div>
-
-    <button class="btn bg" onclick="createRoom()" style="width:100%;padding:14px;font-size:.95rem;margin-top:4px">
-      🚀 Oda Oluştur ve Lobiye Geç
-    </button>
-  </div>
-
-  <div id="t-cfg" class="hidden">
-    <div class="card">
-      <h2>Oyun Ayarları</h2>
-      <div class="g2">
-        <div class="fg"><label>Maks. Puan</label><input type="number" id="cfg-max" value="1000" min="100" step="100"></div>
-        <div class="fg"><label>Min. Puan</label><input type="number" id="cfg-min" value="100" min="0" step="50"></div>
-        <div class="fg"><label>Varsayılan Süre (sn)</label><input type="number" id="cfg-time" value="20" min="5"></div>
-        <div class="fg"><label>Seri Bonusu</label>
-          <select id="cfg-streak"><option value="1">Açık</option><option value="0">Kapalı</option></select>
-        </div>
-      </div>
-      <p style="font-size:.78rem;color:var(--muted)">Seri bonusu: Her art arda doğru cevap %10 çarpan ekler (max ×2)</p>
-    </div>
+    <div id="question-list" class="question-list"></div>
+    <button class="btn-add-q" onclick="addQuestion()">＋ Soru Ekle</button>
+    <button class="btn-start-game" id="btn-start-game" onclick="startLobby()" disabled>🚀 Oyunu Başlat</button>
   </div>
 </div>
 
-<!-- LOBBY -->
-<div id="s-lobby" class="hidden">
-  <div class="g2">
-    <div class="card">
-      <h2>Oda Kodu – Tahtaya Yaz!</h2>
-      <div class="code-big" id="code-big">------</div>
-      <div class="alert ai">Öğrenciler <strong id="stu-url"></strong> adresine gitsin</div>
-      <div style="display:flex;gap:7px;flex-wrap:wrap">
-        <button class="btn bo" onclick="showQR()">📱 QR Göster</button>
-        <button class="btn bg" id="btn-startgame" onclick="startGame()">▶ Oyunu Başlat</button>
+<!-- ===== LOBBY ===== -->
+<div id="screen-lobby" class="screen">
+  <div class="lobby-top">
+    <div class="pin-box">
+      <div class="pin-label">Oyun PIN Kodu</div>
+      <div class="pin-code" id="lobby-pin">------</div>
+      <div class="pin-url" id="lobby-url">mkakademics.vercel.app/student</div>
+    </div>
+    <div class="qr-box"><img id="lobby-qr" src="" alt="QR Kod"></div>
+    <div class="quiz-info-box">
+      <h3 id="lobby-quiz-name">Quiz</h3>
+      <p id="lobby-quiz-count">0 soru</p>
+      <div style="margin-top:8px;display:flex;gap:8px">
+        <button class="btn-success" onclick="startGame()">▶ Oyunu Başlat</button>
+        <button class="btn-secondary" onclick="backToSetup()">← Geri</button>
       </div>
     </div>
-    <div class="card">
-      <h2>Katılımcılar (<span id="stu-count">0</span>)</h2>
-      <div id="stu-list"></div>
+  </div>
+  <div class="player-count-line"><span id="player-count">0</span> oyuncu katıldı</div>
+  <div class="player-grid" id="player-grid"></div>
+</div>
+
+<!-- ===== QUESTION ===== -->
+<div id="screen-question" class="screen">
+  <div class="q-top-bar">
+    <span class="q-progress-text" id="q-progress">Soru 1 / 10</span>
+    <div class="q-timer-wrap">
+      <svg class="q-timer-circle" width="84" height="84" viewBox="0 0 84 84">
+        <circle class="timer-bg" cx="42" cy="42" r="35"/>
+        <circle class="timer-arc" id="timer-arc" cx="42" cy="42" r="35" stroke="#e040fb" stroke-dasharray="219.91" stroke-dashoffset="0"/>
+      </svg>
+      <div class="q-timer-num" id="q-timer-num">20</div>
     </div>
+    <span class="q-answer-count-text" id="q-ans-count">0 / 0 cevapladı</span>
+  </div>
+  <div class="q-main-area">
+    <img id="q-img" class="q-image-preview" src="" alt="" style="display:none">
+    <div class="q-text-display" id="q-text">Soru metni</div>
+  </div>
+  <div class="q-answers-grid" id="q-answers-grid"></div>
+</div>
+
+<!-- ===== RESULTS ===== -->
+<div id="screen-results" class="screen">
+  <div class="results-header" id="results-header">✅ Doğru Cevap</div>
+  <div class="answer-chart" id="answer-chart"></div>
+  <div class="leaderboard">
+    <div class="lb-header">🏆 Liderlik Tablosu</div>
+    <div id="lb-list"></div>
+  </div>
+  <div class="results-actions">
+    <button class="btn-secondary" onclick="endGame()">🏁 Oyunu Bitir</button>
+    <button class="btn-primary" id="btn-next" onclick="nextQuestion()">Sonraki Soru ➜</button>
   </div>
 </div>
 
-<!-- QUESTION (live) -->
-<div id="s-question" class="hidden">
-  <div class="g2">
-    <div class="card">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:.82rem;color:var(--muted)">
-        <span>Soru <span id="qi">1</span>/<span id="qtot">?</span></span>
-        <span style="flex:1"></span>
-        <span id="timer-num" style="font-weight:800;font-size:1.1rem;color:var(--yellow)">20</span>
-      </div>
-      <div class="tbar"><div class="tfill" id="tfill"></div></div>
-      <div id="qdisplay" style="font-size:1.05rem;font-weight:600;line-height:1.5;margin-bottom:12px"></div>
-      <div id="qopts" style="display:flex;flex-direction:column;gap:5px;margin-bottom:14px"></div>
-      <div style="display:flex;align-items:center;gap:8px;font-size:.82rem;color:var(--muted);margin-bottom:12px">
-        <span>Cevaplayan:</span>
-        <div class="pbar"><div class="pfill" id="pfill"></div></div>
-        <span id="pcount">0/0</span>
-      </div>
-      <div style="display:flex;gap:7px">
-        <button class="btn bp" onclick="advanceToResults()">⏭ Sonuçları Göster</button>
-        <button class="btn br bsm" onclick="confirmEnd()">⏹ Bitir</button>
-      </div>
-    </div>
-    <div class="card">
-      <h2>🏆 Anlık Liderlik</h2>
-      <div id="live-lb"></div>
-    </div>
+<!-- ===== PODIUM ===== -->
+<div id="screen-podium" class="screen">
+  <div class="podium-title-text">🏆 Oyun Bitti!</div>
+  <div class="podium-wrap" id="podium-wrap"></div>
+  <div class="full-results">
+    <div class="lb-header">📋 Tüm Sonuçlar</div>
+    <div id="full-lb-list"></div>
+  </div>
+  <div class="podium-actions">
+    <button class="btn-secondary" onclick="downloadCSV()">⬇ CSV İndir</button>
+    <button class="btn-primary" onclick="backToSetup()">🔄 Yeni Oyun</button>
   </div>
 </div>
 
-<!-- RESULTS (between questions) -->
-<div id="s-results" class="hidden">
-  <div class="card">
-    <h2>Soru Sonucu</h2>
-    <div id="res-correct" class="alert ai" style="margin-bottom:14px"></div>
-    <div id="res-lb"></div>
-    <div style="display:flex;gap:7px;margin-top:14px">
-      <button class="btn bp" onclick="nextQuestion()">▶ Sonraki Soru</button>
-      <button class="btn br bsm" onclick="confirmEnd()">⏹ Oyunu Bitir</button>
-    </div>
-  </div>
-</div>
-
-<!-- PODIUM -->
-<div id="s-podium" class="hidden">
-  <div class="card" style="text-align:center;padding:28px">
-    <div style="font-size:1.6rem;font-weight:800;margin-bottom:4px">🏆 Oyun Bitti!</div>
-    <p style="color:var(--muted);margin-bottom:20px">Final Sıralaması</p>
-    <div id="podium-top" style="margin-bottom:20px"></div>
-    <div id="podium-full" style="text-align:left;margin-bottom:20px"></div>
-    <button class="btn bo" onclick="toggleAnalytics()">📊 Soru Analitiği</button>
-    <button class="btn bp" onclick="newGame()" style="margin-left:8px">🔄 Yeni Oyun</button>
-  </div>
-  <div id="analytics" class="card hidden">
-    <h2>📊 Soru Bazlı Analitik</h2>
-    <div id="analytics-list"></div>
-  </div>
-</div>
-
-</main>
-
-<!-- QR Modal -->
-<div class="overlay hidden" id="qr-modal" onclick="hideQR()">
-  <div class="modal" onclick="event.stopPropagation()">
-    <h3 style="margin-bottom:10px">📱 QR ile Katıl</h3>
-    <img id="qr-img" src="" alt="QR">
-    <p style="color:var(--muted);font-size:.82rem;margin-top:10px">Öğrenciler bu kodu taratarak katılır</p>
-    <button class="btn bo bsm" style="margin-top:10px" onclick="hideQR()">Kapat</button>
-  </div>
-</div>
-
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
 <script>
-// ── Supabase ───────────────────────────────────
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// ── State ──────────────────────────────────────
-let questions = JSON.parse(localStorage.getItem('quiz_questions') || '[]');
-let roomCode = null;
-let roomId   = null;
-let timerInt = null;
-let channel  = null;
-let ansCount = 0;
-let stuCount = 0;
-let analyticsData = [];
-let currentQData  = null;
+// State
+let currentRoom = null, currentQuizId = null;
+let timerInterval = null, realtimeChannel = null;
+let participants = [], answerCounts = {}, answersByOption = {}, totalParticipants = 0;
+let isAdvancing = false;
+let questionDefs = [];
 
-// ── Init ───────────────────────────────────────
-refreshForm();
-renderQList();
+// ========== QUIZ LIBRARY ==========
+function loadQuizzes(){ return JSON.parse(localStorage.getItem('mk_quizzes')||'[]'); }
+function persistQuizzes(qs){ localStorage.setItem('mk_quizzes',JSON.stringify(qs)); }
 
-// ── Tabs ───────────────────────────────────────
-function tab(t) {
-  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('on',['q','cfg'][i]===t));
-  document.getElementById('t-q').classList.toggle('hidden', t!=='q');
-  document.getElementById('t-cfg').classList.toggle('hidden', t!=='cfg');
-}
-
-// ── Question Form ──────────────────────────────
-const COLORS = ['#6c63ff','#ff6584','#43b89c','#f59e0b'];
-const LABELS = ['A','B','C','D'];
-
-function refreshForm() {
-  const t = document.getElementById('qtype').value;
-  document.getElementById('mc-area').classList.toggle('hidden', t!=='mc');
-  document.getElementById('tf-area').classList.toggle('hidden', t!=='tf');
-  if (t==='mc') renderOptInputs();
-}
-
-function renderOptInputs(vals=['','','','']) {
-  document.getElementById('opts').innerHTML = vals.map((v,i)=>`
-    <div class="opt-inp">
-      <input type="radio" name="cor" value="${i}" id="r${i}" ${i===0?'checked':''}>
-      <label for="r${i}" style="color:var(--green);font-size:.72rem;font-weight:600">✓</label>
-      <input type="text" id="o${i}" value="${v}" placeholder="Şık ${LABELS[i]}">
+function renderQuizList(){
+  const qs = loadQuizzes();
+  const el = document.getElementById('quiz-list');
+  if(!qs.length){ el.innerHTML='<p style="font-size:.82rem;color:#666">Henüz quiz yok.<br>Yukarıdan yeni quiz oluştur.</p>'; return; }
+  el.innerHTML = qs.map(q=>`
+    <div class="quiz-card ${q.id===currentQuizId?'selected':''}" onclick="loadQuiz('${q.id}')">
+      <h3>${esc(q.title||'İsimsiz Quiz')}</h3>
+      <p>${q.questions.length} soru</p>
     </div>`).join('');
 }
 
-function getCorrect() {
-  const t = document.getElementById('qtype').value;
-  if (t==='mc') return document.querySelector('input[name=cor]:checked')?.value || '0';
-  return document.getElementById('tf-ans').value;
+function newQuiz(){
+  currentQuizId = 'q_'+Date.now();
+  document.getElementById('quiz-title').value='';
+  document.getElementById('question-list').innerHTML='';
+  document.getElementById('btn-del-quiz').style.display='none';
+  document.getElementById('btn-start-game').disabled=true;
+  questionDefs=[];
+  renderQuizList();
+  addQuestion();
 }
 
-function addQ() {
-  const type = document.getElementById('qtype').value;
-  const text = document.getElementById('qtext').value.trim();
-  const time = parseInt(document.getElementById('qtime').value)||20;
-  if (!text) return alert('Soru metni boş!');
-  if (type==='mc') {
-    const opts = [0,1,2,3].map(i=>document.getElementById('o'+i).value.trim());
-    if (opts.some(o=>!o)) return alert('Tüm şıkları doldur!');
-    questions.push({type,text,options:opts,correct:getCorrect(),timeLimit:time});
-  } else {
-    questions.push({type,text,options:['Doğru','Yanlış'],correct:getCorrect(),timeLimit:time});
-  }
-  saveQ(); renderQList(); clearQForm();
+function loadQuiz(id){
+  const qs=loadQuizzes(), quiz=qs.find(q=>q.id===id);
+  if(!quiz)return;
+  currentQuizId=id;
+  document.getElementById('quiz-title').value=quiz.title||'';
+  questionDefs=quiz.questions.map(q=>({...q}));
+  renderQuestions();
+  document.getElementById('btn-del-quiz').style.display='';
+  document.getElementById('btn-start-game').disabled=questionDefs.length===0;
+  renderQuizList();
 }
 
-function removeQ(i) { questions.splice(i,1); saveQ(); renderQList(); }
-
-function saveQ() { localStorage.setItem('quiz_questions', JSON.stringify(questions)); }
-
-function renderQList() {
-  document.getElementById('qcount').textContent = questions.length;
-  document.getElementById('qlist').innerHTML = questions.length
-    ? questions.map((q,i)=>`
-      <div class="qi">
-        <div class="qh">
-          <div class="qn">${i+1}</div>
-          <div style="flex:1;font-size:.88rem">${q.text}</div>
-          <button class="btn br bsm" onclick="removeQ(${i})">✕</button>
-        </div>
-        <div style="font-size:.76rem;color:var(--muted)">
-          ${q.type==='mc'
-            ? q.options.map((o,oi)=>`<span style="margin-right:6px;${oi==q.correct?'color:var(--green);font-weight:600':''}">${LABELS[oi]}) ${o}</span>`).join('')
-            : `<span style="color:var(--green)">✓ ${q.correct==='0'?'Doğru':'Yanlış'}</span>`}
-          &nbsp;|&nbsp; ⏱ ${q.timeLimit}sn
-        </div>
-      </div>`)
-      .join('')
-    : '<p style="color:var(--muted);text-align:center;padding:16px">Henüz soru yok</p>';
+function saveQuiz(){
+  syncFromDOM();
+  const title=document.getElementById('quiz-title').value.trim()||'İsimsiz Quiz';
+  if(!questionDefs.length){toast('⚠️ En az bir soru ekle');return;}
+  const qs=loadQuizzes();
+  const idx=qs.findIndex(q=>q.id===currentQuizId);
+  const quiz={id:currentQuizId,title,questions:questionDefs,updatedAt:new Date().toISOString()};
+  if(idx>=0)qs[idx]=quiz; else qs.push(quiz);
+  persistQuizzes(qs);
+  document.getElementById('btn-del-quiz').style.display='';
+  document.getElementById('btn-start-game').disabled=false;
+  renderQuizList();
+  toast('✅ Quiz kaydedildi');
 }
 
-function clearQForm() {
-  document.getElementById('qtext').value='';
-  renderOptInputs();
+function deleteQuiz(){
+  if(!confirm('Bu quizi silmek istiyor musun?'))return;
+  persistQuizzes(loadQuizzes().filter(q=>q.id!==currentQuizId));
+  newQuiz(); toast('🗑 Quiz silindi');
 }
 
-function loadSample() {
-  questions = [
-    {type:'mc',text:"Türkiye'nin başkenti neresidir?",options:['İstanbul','Ankara','İzmir','Bursa'],correct:'1',timeLimit:15},
-    {type:'tf',text:"Güneş batıdan doğar.",options:['Doğru','Yanlış'],correct:'1',timeLimit:10},
-    {type:'mc',text:"Suyun kimyasal formülü nedir?",options:['CO2','NaCl','H2O','O2'],correct:'2',timeLimit:15},
-    {type:'tf',text:"Filler memelilerdir.",options:['Doğru','Yanlış'],correct:'0',timeLimit:10},
-    {type:'mc',text:"Hangi gezegen Güneş'e en yakındır?",options:['Venüs','Dünya','Mars','Merkür'],correct:'3',timeLimit:20},
-  ];
-  saveQ(); renderQList();
+// ========== QUESTION EDITOR ==========
+function addQuestion(){
+  questionDefs.push({type:'mc',text:'',image:'',options:['','','',''],correct:0,time:20});
+  renderQuestions();
+  document.getElementById('btn-start-game').disabled=false;
 }
 
-function exportQ() {
-  if (!questions.length) return alert('Önce soru ekle!');
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob([JSON.stringify(questions,null,2)],{type:'application/json'}));
-  a.download='sorular.json'; a.click();
-}
-function importQ(e) {
-  const f=e.target.files[0]; if(!f) return;
-  const r=new FileReader();
-  r.onload=ev=>{ try{questions=JSON.parse(ev.target.result);saveQ();renderQList();}catch{alert('Geçersiz JSON!');} };
-  r.readAsText(f);
-}
-
-// ── Room ───────────────────────────────────────
-function genCode() {
-  const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  return Array.from({length:6},()=>c[Math.floor(Math.random()*c.length)]).join('');
-}
-
-function getSettings() {
-  return {
-    maxPoints: parseInt(document.getElementById('cfg-max').value)||1000,
-    minPoints: parseInt(document.getElementById('cfg-min').value)||100,
-    timePerQuestion: parseInt(document.getElementById('cfg-time').value)||20,
-    streakBonus: document.getElementById('cfg-streak').value==='1',
-  };
-}
-
-async function createRoom() {
-  if (!questions.length) return alert('Önce soru ekle!');
-  // Eski odaları temizle (24 saatten eski)
-  const yesterday = new Date(Date.now()-86400000).toISOString();
-  await sb.from('rooms').delete().lt('created_at', yesterday);
-
-  const code = genCode();
-  const { data, error } = await sb.from('rooms').insert({
-    code,
-    phase: 'lobby',
-    questions: questions,
-    settings: getSettings(),
-  }).select().single();
-
-  if (error) return alert('Oda oluşturulamadı: '+error.message);
-  roomCode = data.code;
-  roomId   = data.id;
-
-  document.getElementById('code-big').textContent = roomCode;
-  document.getElementById('room-hdr').textContent  = roomCode;
-  const origin = location.origin;
-  document.getElementById('stu-url').textContent = origin+'/student.html';
-  document.getElementById('phase-badge').textContent = 'Lobi';
-
-  subscribeRoom();
-  showScreen('lobby');
-}
-
-function subscribeRoom() {
-  channel = sb.channel('room-'+roomCode)
-    .on('postgres_changes',{event:'INSERT',schema:'public',table:'participants',filter:`room_code=eq.${roomCode}`},
-      ()=>refreshLobby())
-    .on('postgres_changes',{event:'INSERT',schema:'public',table:'answers',filter:`room_code=eq.${roomCode}`},
-      ()=>{ ansCount++; updateProgress(); })
-    .subscribe();
-}
-
-async function refreshLobby() {
-  const {data} = await sb.from('participants').select('name').eq('room_code',roomCode);
-  stuCount = data?.length||0;
-  document.getElementById('stu-count').textContent = stuCount;
-  document.getElementById('stu-list').innerHTML = (data||[]).map(p=>`<span class="chip">👤 ${p.name}</span>`).join('');
-}
-
-// ── Game Flow ──────────────────────────────────
-async function startGame() {
-  await sb.from('rooms').update({phase:'question',current_question:0,question_start_time:new Date().toISOString()}).eq('code',roomCode);
-  loadQuestion(0);
-}
-
-function loadQuestion(idx) {
-  const q = questions[idx];
-  currentQData = q;
-  ansCount = 0;
-  document.getElementById('qi').textContent = idx+1;
-  document.getElementById('qtot').textContent = questions.length;
-  document.getElementById('qdisplay').textContent = q.text;
-  document.getElementById('qopts').innerHTML = (q.options||[]).map((o,i)=>`
-    <div style="display:flex;align-items:center;gap:7px;padding:8px 11px;background:var(--card2);border-radius:7px;font-size:.85rem">
-      <span style="font-weight:700;color:${COLORS[i%COLORS.length]}">${LABELS[i]||i}</span> ${o}
-    </div>`).join('');
-  updateProgress();
-  startTimer(q.timeLimit||20);
-  showScreen('question');
-  document.getElementById('phase-badge').textContent = `Soru ${idx+1}/${questions.length}`;
-}
-
-function updateProgress() {
-  const pct = stuCount ? Math.round(ansCount/stuCount*100) : 0;
-  document.getElementById('pfill').style.width = pct+'%';
-  document.getElementById('pcount').textContent = `${ansCount}/${stuCount}`;
-}
-
-function startTimer(secs) {
-  clearInterval(timerInt);
-  let rem = secs;
-  const fill = document.getElementById('tfill');
-  const num  = document.getElementById('timer-num');
-  fill.style.width='100%'; fill.style.background='var(--accent)'; num.textContent=secs;
-  timerInt = setInterval(()=>{
-    rem-=.1;
-    fill.style.width=Math.max(0,rem/secs*100)+'%';
-    num.textContent=Math.ceil(rem);
-    if (rem<=5) fill.style.background='var(--red)';
-    else if (rem<=10) fill.style.background='var(--yellow)';
-    if (rem<=0) { clearInterval(timerInt); advanceToResults(); }
-  },100);
-}
-
-async function advanceToResults() {
-  clearInterval(timerInt);
-  const {data:room} = await sb.from('rooms').select('current_question').eq('code',roomCode).single();
-  const idx = room.current_question;
-  await sb.from('rooms').update({phase:'results'}).eq('code',roomCode);
-
-  const q = questions[idx];
-  const correctLabel = q.options?.[parseInt(q.correct)] || (q.correct==='0'?'Doğru':'Yanlış');
-  document.getElementById('res-correct').innerHTML = `✓ Doğru Cevap: <strong>${correctLabel}</strong>`;
-
-  // Leaderboard
-  const {data:parts} = await sb.from('participants').select('name,score,streak').eq('room_code',roomCode).order('score',{ascending:false});
-  document.getElementById('res-lb').innerHTML = renderLB(parts||[]);
-  document.getElementById('live-lb').innerHTML = renderLB((parts||[]).slice(0,8));
-
-  showScreen('results');
-  document.getElementById('phase-badge').textContent = 'Sonuç';
-}
-
-async function nextQuestion() {
-  const {data:room} = await sb.from('rooms').select('current_question').eq('code',roomCode).single();
-  const next = room.current_question + 1;
-  if (next >= questions.length) return endGame();
-  await sb.from('rooms').update({phase:'question',current_question:next,question_start_time:new Date().toISOString()}).eq('code',roomCode);
-  loadQuestion(next);
-}
-
-async function endGame() {
-  clearInterval(timerInt);
-  await sb.from('rooms').update({phase:'podium'}).eq('code',roomCode);
-  const {data:parts} = await sb.from('participants').select('name,score').eq('room_code',roomCode).order('score',{ascending:false});
-  const lb = parts||[];
-
-  const medals=['🥇','🥈','🥉'];
-  document.getElementById('podium-top').innerHTML = lb.slice(0,3).map((p,i)=>`
-    <div style="display:inline-block;text-align:center;margin:0 10px">
-      <div style="font-size:${i===0?'2rem':'1.5rem'}">${medals[i]}</div>
-      <div style="background:var(--card2);border:${i===0?'2px solid var(--yellow)':'1px solid var(--border)'};border-radius:9px;padding:10px 14px;margin-top:6px">
-        <div style="font-weight:700">${p.name}</div>
-        <div style="color:var(--accent);font-weight:800">${p.score.toLocaleString()}</div>
+function renderQuestions(){
+  const container=document.getElementById('question-list');
+  container.innerHTML='';
+  const OC=['oa','ob','oc','od'], SH=['▲','◆','●','■'];
+  questionDefs.forEach((q,i)=>{
+    const isTF=q.type==='tf';
+    const opts=isTF?['Doğru','Yanlış']:(q.options||['','','','']);
+    const div=document.createElement('div');
+    div.className='q-card'; div.id='qc'+i;
+    div.innerHTML=`
+      <div class="q-card-header">
+        <div class="q-number">${i+1}</div>
+        <select class="q-type-select" onchange="changeQType(${i},this.value)">
+          <option value="mc" ${q.type==='mc'?'selected':''}>Çoktan Seçmeli</option>
+          <option value="tf" ${q.type==='tf'?'selected':''}>Doğru / Yanlış</option>
+        </select>
+        <select class="q-time-select" onchange="qDefs_set(${i},'time',+this.value)">
+          <option value="10" ${q.time==10?'selected':''}>10 sn</option>
+          <option value="20" ${q.time==20?'selected':''}>20 sn</option>
+          <option value="30" ${q.time==30?'selected':''}>30 sn</option>
+          <option value="60" ${q.time==60?'selected':''}>60 sn</option>
+        </select>
+        <div class="spacer"></div>
+        <button class="btn-icon" onclick="moveQ(${i},-1)" ${i===0?'disabled':''}>↑</button>
+        <button class="btn-icon" onclick="moveQ(${i},1)" ${i===questionDefs.length-1?'disabled':''}>↓</button>
+        <button class="btn-icon" style="color:var(--red)" onclick="removeQ(${i})">✕</button>
       </div>
-    </div>`).join('');
-
-  document.getElementById('podium-full').innerHTML = `<div style="margin-top:16px">${renderLB(lb)}</div>`;
-
-  // Analytics
-  analyticsData = await buildAnalytics();
-  showScreen('podium');
-  document.getElementById('phase-badge').textContent = 'Bitti!';
-}
-
-async function buildAnalytics() {
-  const {data:ans} = await sb.from('answers').select('*').eq('room_code',roomCode);
-  return questions.map((q,i)=>{
-    const qAns = (ans||[]).filter(a=>a.question_index===i);
-    const correct = qAns.filter(a=>a.is_correct).length;
-    const rate = qAns.length ? Math.round(correct/qAns.length*100) : 0;
-    const avgTime = qAns.length ? Math.round(qAns.reduce((s,a)=>s+(a.time_taken_ms||0),0)/qAns.length) : 0;
-    return {text:q.text,correct,total:qAns.length,rate,avgTime};
+      <textarea class="q-text-input" placeholder="Soru metnini gir..." onchange="qDefs_set(${i},'text',this.value)">${esc(q.text||'')}</textarea>
+      <input type="url" class="q-image-input" placeholder="Görsel URL (opsiyonel – boş bırakabilirsin)" value="${esc(q.image||'')}" onchange="qDefs_set(${i},'image',this.value)">
+      <div class="q-options">
+        ${opts.map((opt,j)=>`
+          <div class="q-option ${OC[j]}">
+            <div class="opt-shape">${SH[j]}</div>
+            ${isTF?`<span style="flex:1;font-size:.85rem">${opt}</span>`:`<input class="opt-input" value="${esc(opt)}" placeholder="Seçenek ${j+1}" onchange="setOpt(${i},${j},this.value)">`}
+            <input type="radio" class="opt-correct" name="cr${i}" ${q.correct===j?'checked':''} onchange="qDefs_set(${i},'correct',${j})" title="Doğru cevap">
+          </div>`).join('')}
+      </div>
+      <div style="font-size:.72rem;color:#666">● Doğru cevabı işaretle</div>`;
+    container.appendChild(div);
   });
 }
 
-function toggleAnalytics() {
-  const el = document.getElementById('analytics');
-  el.classList.toggle('hidden');
-  if (!el.classList.contains('hidden')) {
-    document.getElementById('analytics-list').innerHTML = analyticsData.map((a,i)=>`
-      <div class="qstat">
-        <div style="font-size:.85rem;font-weight:600">${i+1}. ${a.text}</div>
-        <div style="display:flex;align-items:center;gap:7px;margin-top:5px;font-size:.78rem">
-          <span style="color:var(--muted)">${a.correct}/${a.total} doğru</span>
-          <div class="sbar"><div class="sfill ${a.rate>=70?'sg':a.rate>=40?'sy':'sr'}" style="width:${a.rate}%"></div></div>
-          <span style="font-weight:700">${a.rate}%</span>
-        </div>
-        ${a.avgTime?`<div style="font-size:.73rem;color:var(--muted)">Ort. süre: ${(a.avgTime/1000).toFixed(1)}sn</div>`:''}
-      </div>`).join('');
+function syncFromDOM(){
+  document.querySelectorAll('.q-text-input').forEach((el,i)=>{if(questionDefs[i])questionDefs[i].text=el.value;});
+  document.querySelectorAll('.q-image-input').forEach((el,i)=>{if(questionDefs[i])questionDefs[i].image=el.value;});
+}
+function qDefs_set(i,f,v){if(questionDefs[i])questionDefs[i][f]=v;}
+function setOpt(i,j,v){if(questionDefs[i])questionDefs[i].options[j]=v;}
+function changeQType(i,type){
+  if(!questionDefs[i])return;
+  questionDefs[i].type=type;
+  questionDefs[i].options=type==='tf'?['Doğru','Yanlış']:['','','',''];
+  questionDefs[i].correct=0;
+  renderQuestions();
+}
+function removeQ(i){questionDefs.splice(i,1);renderQuestions();if(!questionDefs.length)document.getElementById('btn-start-game').disabled=true;}
+function moveQ(i,d){const j=i+d;if(j<0||j>=questionDefs.length)return;[questionDefs[i],questionDefs[j]]=[questionDefs[j],questionDefs[i]];renderQuestions();}
+
+// ========== GAME FLOW ==========
+async function startLobby(){
+  syncFromDOM();
+  if(!questionDefs.length){toast('⚠️ Soru ekle');return;}
+  document.getElementById('btn-start-game').disabled=true;
+  const title=document.getElementById('quiz-title').value.trim()||'Quiz';
+  // cleanup
+  await sb.from('rooms').delete().lt('created_at',new Date(Date.now()-86400000).toISOString());
+  // code
+  const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code=''; for(let i=0;i<6;i++)code+=chars[Math.floor(Math.random()*chars.length)];
+  // create
+  const{data,error}=await sb.from('rooms').insert({
+    code,phase:'lobby',current_question:-1,
+    questions:questionDefs,
+    settings:{title,questionCount:questionDefs.length}
+  }).select().single();
+  if(error){toast('❌ '+error.message);document.getElementById('btn-start-game').disabled=false;return;}
+  currentRoom=data; participants=[]; answerCounts={}; answersByOption={};
+  // lobby UI
+  document.getElementById('lobby-pin').textContent=code;
+  document.getElementById('lobby-quiz-name').textContent=title;
+  document.getElementById('lobby-quiz-count').textContent=questionDefs.length+' soru';
+  const joinUrl=window.location.origin+'/student';
+  document.getElementById('lobby-qr').src=`https://api.qrserver.com/v1/create-qr-code/?size=130x130&data=${encodeURIComponent(joinUrl+'?pin='+code)}`;
+  document.getElementById('lobby-url').textContent=new URL(joinUrl).host+'/student';
+  showScreen('lobby');
+  subscribeRoom(code);
+}
+
+function subscribeRoom(code){
+  if(realtimeChannel)sb.removeChannel(realtimeChannel);
+  realtimeChannel=sb.channel('teacher-'+code)
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'participants',filter:`room_code=eq.${code}`},p=>{
+      participants.push(p.new);totalParticipants=participants.length;
+      renderPlayerGrid();
+    })
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'answers',filter:`room_code=eq.${code}`},p=>{
+      const a=p.new;
+      if(a.question_index===currentRoom.current_question){
+        answerCounts[a.question_index]=(answerCounts[a.question_index]||0)+1;
+        answersByOption[a.answer]=(answersByOption[a.answer]||0)+1;
+        const cnt=answerCounts[a.question_index];
+        document.getElementById('q-ans-count').textContent=`${cnt} / ${totalParticipants} cevapladı`;
+        if(cnt>=totalParticipants&&totalParticipants>0)setTimeout(advanceToResults,400);
+      }
+    })
+    .subscribe();
+}
+
+function renderPlayerGrid(){
+  document.getElementById('player-count').textContent=participants.length;
+  document.getElementById('player-grid').innerHTML=participants.map(p=>`
+    <div class="player-chip"><span>${p.avatar||'😊'}</span>${esc(p.name)}</div>`).join('');
+}
+
+async function startGame(){
+  if(participants.length===0&&!confirm('Hiç oyuncu yok. Yine de başlat?'))return;
+  totalParticipants=participants.length;
+  await loadQuestion(0);
+}
+
+async function loadQuestion(idx){
+  const q=currentRoom.questions[idx];
+  answersByOption={};
+  isAdvancing=false;
+  const now=new Date().toISOString();
+  const{data}=await sb.from('rooms').update({
+    phase:'question',current_question:idx,question_start_time:now
+  }).eq('code',currentRoom.code).select().single();
+  if(data)currentRoom=data;
+  // render
+  document.getElementById('q-progress').textContent=`Soru ${idx+1} / ${currentRoom.questions.length}`;
+  document.getElementById('q-ans-count').textContent=`0 / ${totalParticipants} cevapladı`;
+  const img=document.getElementById('q-img');
+  if(q.image){img.src=q.image;img.style.display='';}else img.style.display='none';
+  document.getElementById('q-text').textContent=q.text||'(Soru metni girilmedi)';
+  const isTF=q.type==='tf', opts=isTF?['Doğru','Yanlış']:(q.options||[]);
+  const OC=['oa','ob','oc','od'], SH=['▲','◆','●','■'];
+  document.getElementById('q-answers-grid').innerHTML=opts.map((opt,i)=>`
+    <div class="answer-display-btn ${OC[i]}"><span class="sh">${SH[i]}</span>${esc(opt)}</div>`).join('');
+  showScreen('question');
+  startTimer(q.time||20);
+}
+
+function startTimer(seconds){
+  if(timerInterval)clearInterval(timerInterval);
+  let rem=seconds;
+  const arc=document.getElementById('timer-arc'), C=219.91;
+  function tick(){
+    document.getElementById('q-timer-num').textContent=rem;
+    arc.style.strokeDashoffset=C*(1-rem/seconds);
+    arc.style.stroke=rem>seconds*.5?'#e040fb':rem>seconds*.25?'#d89e00':'#e21b3c';
+    if(rem<=0){clearInterval(timerInterval);timerInterval=null;advanceToResults();}
+    else rem--;
   }
+  tick(); timerInterval=setInterval(tick,1000);
 }
 
-function renderLB(arr) {
-  const medals=['🥇','🥈','🥉'];
-  return arr.map((p,i)=>`
-    <div class="lbrow">
-      <span class="lbrank ${i===0?'gold':i===1?'silver':i===2?'bronze':''}">${medals[i]||i+1}</span>
-      <span class="lbname">${p.name}</span>
-      ${p.streak>1?`<span style="color:var(--yellow);font-size:.75rem">🔥${p.streak}</span>`:''}
-      <span class="lbsc">${(p.score||0).toLocaleString()}</span>
+async function advanceToResults(){
+  if(isAdvancing)return; isAdvancing=true;
+  if(timerInterval){clearInterval(timerInterval);timerInterval=null;}
+  const idx=currentRoom.current_question, q=currentRoom.questions[idx];
+  // reveal on teacher screen
+  document.querySelectorAll('.answer-display-btn').forEach((b,i)=>{
+    b.classList.add(i===q.correct?'correct-reveal':'wrong-reveal');
+  });
+  setTimeout(async()=>{
+    await sb.from('rooms').update({phase:'results'}).eq('code',currentRoom.code);
+    const{data:lb}=await sb.from('participants').select('*').eq('room_code',currentRoom.code).order('score',{ascending:false}).limit(10);
+    renderResults(q,lb||[]);
+    showScreen('results');
+  },1500);
+}
+
+function renderResults(q,lb){
+  const isTF=q.type==='tf', opts=isTF?['Doğru','Yanlış']:(q.options||[]);
+  const OC=['oa','ob','oc','od'], SH=['▲','◆','●','■'];
+  const correctText=opts[q.correct]||'';
+  document.getElementById('results-header').innerHTML=`✅ Doğru Cevap: <span style="color:#4ade80;margin-left:8px">${esc(correctText)}</span>`;
+  const total=Object.values(answersByOption).reduce((a,b)=>a+b,0)||1;
+  document.getElementById('answer-chart').innerHTML=opts.map((opt,i)=>{
+    const cnt=answersByOption[opt]||0, pct=Math.round(cnt/total*100);
+    return`<div class="chart-bar-wrap">
+      <div class="chart-count-txt">${cnt}</div>
+      <div class="chart-bar ${OC[i]}" style="height:${Math.max(4,pct)}%"></div>
+      <div class="chart-label-txt">${SH[i]}</div>
+    </div>`;}).join('');
+  document.getElementById('lb-list').innerHTML=lb.slice(0,8).map((p,i)=>`
+    <div class="lb-row" style="animation-delay:${i*.07}s">
+      <div class="lb-rank ${i<3?'r'+(i+1):''}">
+        ${i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1)+'.'}
+      </div>
+      <span class="lb-avatar">${p.avatar||'😊'}</span>
+      <span class="lb-name">${esc(p.name)}</span>
+      <span class="lb-score">${p.score.toLocaleString()}</span>
     </div>`).join('');
+  const isLast=currentRoom.current_question>=currentRoom.questions.length-1;
+  document.getElementById('btn-next').textContent=isLast?'🏆 Sonuçlara Git':'Sonraki Soru ➜';
 }
 
-function confirmEnd() { if(confirm('Oyunu bitirmek istediğine emin misin?')) endGame(); }
+async function nextQuestion(){
+  const idx=currentRoom.current_question;
+  if(idx>=currentRoom.questions.length-1){endGame();return;}
+  await loadQuestion(idx+1);
+}
 
-function newGame() {
-  roomCode=null; roomId=null;
-  channel?.unsubscribe();
-  document.getElementById('room-hdr').textContent='';
-  document.getElementById('phase-badge').textContent='Öğretmen';
+async function endGame(){
+  await sb.from('rooms').update({phase:'podium'}).eq('code',currentRoom.code);
+  const{data:lb}=await sb.from('participants').select('*').eq('room_code',currentRoom.code).order('score',{ascending:false});
+  renderPodium(lb||[]);
+  showScreen('podium');
+}
+
+function renderPodium(lb){
+  const order=[lb[1],lb[0],lb[2]].filter(Boolean);
+  const heights=['120px','158px','88px'],colors=['#c0c0c0','#ffd700','#cd7f32'],labels=['2','1','3'];
+  document.getElementById('podium-wrap').innerHTML=order.map((p,i)=>`
+    <div class="podium-slot">
+      <div class="podium-av">${p.avatar||'😊'}</div>
+      <div class="podium-nm">${esc(p.name)}</div>
+      <div class="podium-sc">${p.score.toLocaleString()} puan</div>
+      <div class="podium-block" style="height:${heights[i]};background:${colors[i]}">${labels[i]}</div>
+    </div>`).join('');
+  document.getElementById('full-lb-list').innerHTML=lb.map((p,i)=>`
+    <div class="lb-row">
+      <div class="lb-rank ${i<3?'r'+(i+1):''}">
+        ${i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1)+'.'}
+      </div>
+      <span class="lb-avatar">${p.avatar||'😊'}</span>
+      <span class="lb-name">${esc(p.name)}</span>
+      <span class="lb-score">${p.score.toLocaleString()}</span>
+    </div>`).join('');
+  window._lastResults=lb;
+}
+
+function downloadCSV(){
+  const lb=window._lastResults||[];
+  const rows=[['Sıra','Ad','Puan','Seri'],...lb.map((p,i)=>[i+1,p.name,p.score,p.streak])];
+  const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'})),download:'mkakademics-sonuclar.csv'});
+  a.click();
+}
+
+function backToSetup(){
+  currentRoom=null;participants=[];answerCounts={};isAdvancing=false;
+  if(realtimeChannel){sb.removeChannel(realtimeChannel);realtimeChannel=null;}
   showScreen('setup');
+  document.getElementById('btn-start-game').disabled=questionDefs.length===0;
 }
 
-// ── QR ─────────────────────────────────────────
-async function showQR() {
-  const url = location.origin+'/student.html';
-  // Simple QR via Google Charts API (no backend needed)
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
-  document.getElementById('qr-img').src = qrUrl;
-  document.getElementById('qr-modal').classList.remove('hidden');
-}
-function hideQR() { document.getElementById('qr-modal').classList.add('hidden'); }
+// ========== UTILS ==========
+function showScreen(n){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById('screen-'+n).classList.add('active');}
+function toast(m,d=3000){const e=document.querySelector('.toast');if(e)e.remove();const t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),d);}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
-// ── Screens ─────────────────────────────────────
-function showScreen(s) {
-  ['setup','lobby','question','results','podium'].forEach(n=>
-    document.getElementById('s-'+n).classList.toggle('hidden',n!==s));
-}
+// ========== INIT ==========
+renderQuizList();
+const saved=loadQuizzes();
+if(saved.length>0)loadQuiz(saved[saved.length-1].id);
+else newQuiz();
 </script>
 </body>
 </html>
