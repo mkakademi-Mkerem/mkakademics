@@ -2,30 +2,42 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Sınıf Yarışması</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>mkakademics – Sınıf Yarışması</title>
 <style>
-  *{margin:0;padding:0;box-sizing:border-box}
-  body{background:#0f1117;color:#e2e8f0;font-family:'Segoe UI',system-ui,sans-serif;
-    min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
-  .wrap{text-align:center;max-width:400px;width:100%}
-  h1{font-size:2.6rem;font-weight:800;background:linear-gradient(135deg,#6c63ff,#ff6584);
-    -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:6px}
-  p{color:#8892a4;margin-bottom:36px;font-size:.95rem}
-  a{display:block;padding:16px;border-radius:12px;font-size:1.05rem;font-weight:700;
-    text-decoration:none;margin-bottom:12px;transition:all .18s}
-  .t{background:#6c63ff;color:#fff}
-  .t:hover{background:#5a51e8;transform:translateY(-2px)}
-  .s{background:#1a1d26;color:#e2e8f0;border:1px solid #2d3350}
-  .s:hover{background:#22263a;transform:translateY(-2px)}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:linear-gradient(135deg,#1a1a2e 0%,#16213e 60%,#0f0f23 100%);color:#fff;min-height:100vh;display:flex;align-items:center;justify-content:center;}
+.container{text-align:center;padding:32px 20px;max-width:480px;width:100%;}
+.logo{font-size:3rem;font-weight:900;background:linear-gradient(to right,#e040fb,#7c4dff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;}
+.tagline{color:#888;font-size:1rem;margin-bottom:40px;}
+.cards{display:flex;flex-direction:column;gap:16px;}
+.card{background:#16213e;border-radius:20px;padding:24px;border:2px solid #2a2a4a;text-decoration:none;color:#fff;transition:all .2s;display:block;}
+.card:hover{border-color:var(--c);transform:translateY(-3px);box-shadow:0 10px 30px rgba(0,0,0,.4);}
+.card.teacher{--c:#e040fb;}
+.card.student{--c:#1368ce;}
+.card-icon{font-size:2.5rem;margin-bottom:10px;}
+.card-title{font-size:1.3rem;font-weight:700;margin-bottom:6px;}
+.card-desc{font-size:.88rem;color:#888;}
+.footer{margin-top:32px;font-size:.78rem;color:#555;}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <h1>🎮 Sınıf Yarışması</h1>
-  <p>Hızlı ol, puanı kap!</p>
-  <a href="teacher.html" class="t">👨‍🏫 Öğretmen Girişi</a>
-  <a href="student.html" class="s">👨‍🎓 Öğrenci Girişi</a>
+<div class="container">
+  <div class="logo">mkakademics</div>
+  <div class="tagline">Sınıf için canlı quiz yarışması</div>
+  <div class="cards">
+    <a href="/teacher" class="card teacher">
+      <div class="card-icon">👨‍🏫</div>
+      <div class="card-title">Öğretmen Paneli</div>
+      <div class="card-desc">Quiz oluştur, oyunu yönet, sonuçları takip et</div>
+    </a>
+    <a href="/student" class="card student">
+      <div class="card-icon">📱</div>
+      <div class="card-title">Oyuna Katıl</div>
+      <div class="card-desc">PIN kodunu gir ve yarışmaya başla</div>
+    </a>
+  </div>
+  <div class="footer">mkakademics • Öğretmenler için ücretsiz</div>
 </div>
 </body>
 </html>
