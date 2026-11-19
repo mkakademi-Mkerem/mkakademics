@@ -51,6 +51,22 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#1a1a2e;color:#fff;m
 .oa .opt-shape{background:var(--red);} .ob .opt-shape{background:var(--blue);} .oc .opt-shape{background:var(--yellow);} .od .opt-shape{background:var(--green);}
 .opt-input{flex:1;background:transparent;border:none;color:#fff;font-size:.82rem;outline:none;}
 .opt-correct{width:18px;height:18px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;}
+/* Matching / Ordering editor */
+.q-matching-pairs,.q-ordering-items{margin-bottom:8px;}
+.match-pair-row,.order-item-row{display:flex;align-items:center;gap:6px;margin-bottom:6px;}
+.match-side-input,.order-item-input{flex:1;background:#0f0f23;border:1px solid #3a3a5a;color:#fff;padding:6px 9px;border-radius:7px;font-size:.82rem;outline:none;}
+.match-side-input:focus,.order-item-input:focus{border-color:var(--accent);}
+.match-arr{color:#888;font-size:1rem;}
+.order-num-badge{width:22px;height:22px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;flex-shrink:0;}
+.btn-sm-add{background:transparent;border:1px dashed #3a3a5a;color:#888;padding:4px 10px;border-radius:7px;font-size:.78rem;cursor:pointer;margin-top:2px;}
+.btn-sm-add:hover{border-color:var(--accent);color:var(--accent);}
+/* Teacher question screen - matching/ordering display */
+.match-display,.order-display{padding:8px 0;width:100%;max-width:800px;}
+.match-display-row{display:flex;align-items:center;gap:10px;padding:8px 16px;background:rgba(255,255,255,.06);border-radius:9px;margin-bottom:7px;font-size:1rem;}
+.match-display-row span:first-child,.match-display-row span:last-child{flex:1;}
+.match-display-row span:nth-child(2){color:#888;}
+.order-display-row{display:flex;align-items:center;gap:12px;padding:8px 16px;background:rgba(255,255,255,.06);border-radius:9px;margin-bottom:7px;font-size:1rem;}
+.order-display-num{width:28px;height:28px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;flex-shrink:0;}
 .btn-add-q{width:100%;padding:13px;background:var(--card);border:2px dashed #3a3a5a;color:#888;border-radius:12px;cursor:pointer;font-size:.9rem;transition:all .2s;}
 .btn-add-q:hover{border-color:var(--accent);color:var(--accent);}
 .btn-start-game{width:100%;padding:16px;background:linear-gradient(135deg,var(--accent),#7c4dff);color:#fff;border:none;border-radius:14px;cursor:pointer;font-size:1.1rem;font-weight:700;transition:all .2s;letter-spacing:.5px;}
@@ -363,8 +379,49 @@ function renderQuestions(){
   container.innerHTML='';
   const OC=['oa','ob','oc','od'], SH=['▲','◆','●','■'];
   questionDefs.forEach((q,i)=>{
-    const isTF=q.type==='tf';
-    const opts=isTF?['Doğru','Yanlış']:(q.options||['','','','']);
+    const isTF=q.type==='tf', isMC=q.type==='mc';
+    const isMatching=q.type==='matching', isOrdering=q.type==='ordering';
+    const opts=isTF?['Doğru','Yanlış']:(isMC?(q.options||['','','','']):null);
+    const pairs=isMatching?(q.pairs||[{l:'',r:''},{l:'',r:''},{l:'',r:''},{l:'',r:''}]):null;
+    const items=isOrdering?(q.items||['','','','']):null;
+
+    // Build type-specific input section
+    let typeBody='';
+    if(isMC||isTF){
+      typeBody=`<div class="q-options">
+        ${opts.map((opt,j)=>`
+          <div class="q-option ${OC[j]}">
+            <div class="opt-shape">${SH[j]}</div>
+            ${isTF?`<span style="flex:1;font-size:.85rem">${opt}</span>`:`<input class="opt-input" value="${esc(opt)}" placeholder="Seçenek ${j+1}" onchange="setOpt(${i},${j},this.value)">`}
+            <input type="radio" class="opt-correct" name="cr${i}" ${q.correct===j?'checked':''} onchange="qDefs_set(${i},'correct',${j})" title="Doğru cevap">
+          </div>`).join('')}
+      </div>
+      <div style="font-size:.72rem;color:#666">● Doğru cevabı işaretle</div>`;
+    } else if(isMatching){
+      typeBody=`<div class="q-matching-pairs">
+        <div style="font-size:.78rem;color:#aaa;margin-bottom:6px">Eşleştirme çiftleri (Sol → Sağ):</div>
+        ${pairs.map((p,j)=>`
+          <div class="match-pair-row">
+            <input class="match-side-input" value="${esc(p.l)}" placeholder="Sol ${j+1}" oninput="setMatchPair(${i},${j},'l',this.value)">
+            <span class="match-arr">→</span>
+            <input class="match-side-input" value="${esc(p.r)}" placeholder="Sağ ${j+1}" oninput="setMatchPair(${i},${j},'r',this.value)">
+            ${pairs.length>2?`<button class="btn-icon" style="font-size:.7rem" onclick="removeMatchPair(${i},${j})">✕</button>`:''}
+          </div>`).join('')}
+        <button class="btn-sm-add" onclick="addMatchPair(${i})">+ Çift Ekle</button>
+      </div>`;
+    } else if(isOrdering){
+      typeBody=`<div class="q-ordering-items">
+        <div style="font-size:.78rem;color:#aaa;margin-bottom:6px">Maddeleri doğru sıraya göre gir:</div>
+        ${items.map((item,j)=>`
+          <div class="order-item-row">
+            <div class="order-num-badge">${j+1}</div>
+            <input class="order-item-input" value="${esc(item)}" placeholder="${j+1}. madde" oninput="setOrderItem(${i},${j},this.value)">
+            ${items.length>2?`<button class="btn-icon" style="font-size:.7rem" onclick="removeOrderItem(${i},${j})">✕</button>`:''}
+          </div>`).join('')}
+        <button class="btn-sm-add" onclick="addOrderItem(${i})">+ Madde Ekle</button>
+      </div>`;
+    }
+
     const div=document.createElement('div');
     div.className='q-card'; div.id='qc'+i;
     div.innerHTML=`
@@ -373,6 +430,8 @@ function renderQuestions(){
         <select class="q-type-select" onchange="changeQType(${i},this.value)">
           <option value="mc" ${q.type==='mc'?'selected':''}>Çoktan Seçmeli</option>
           <option value="tf" ${q.type==='tf'?'selected':''}>Doğru / Yanlış</option>
+          <option value="matching" ${q.type==='matching'?'selected':''}>Eşleştirme</option>
+          <option value="ordering" ${q.type==='ordering'?'selected':''}>Sıralama</option>
         </select>
         <select class="q-time-select" onchange="qDefs_set(${i},'time',+this.value)">
           <option value="10" ${q.time==10?'selected':''}>10 sn</option>
@@ -387,15 +446,7 @@ function renderQuestions(){
       </div>
       <textarea class="q-text-input" placeholder="Soru metnini gir..." onchange="qDefs_set(${i},'text',this.value)">${esc(q.text||'')}</textarea>
       <input type="url" class="q-image-input" placeholder="Görsel URL (opsiyonel – boş bırakabilirsin)" value="${esc(q.image||'')}" onchange="qDefs_set(${i},'image',this.value)">
-      <div class="q-options">
-        ${opts.map((opt,j)=>`
-          <div class="q-option ${OC[j]}">
-            <div class="opt-shape">${SH[j]}</div>
-            ${isTF?`<span style="flex:1;font-size:.85rem">${opt}</span>`:`<input class="opt-input" value="${esc(opt)}" placeholder="Seçenek ${j+1}" onchange="setOpt(${i},${j},this.value)">`}
-            <input type="radio" class="opt-correct" name="cr${i}" ${q.correct===j?'checked':''} onchange="qDefs_set(${i},'correct',${j})" title="Doğru cevap">
-          </div>`).join('')}
-      </div>
-      <div style="font-size:.72rem;color:#666">● Doğru cevabı işaretle</div>`;
+      ${typeBody}`;
     container.appendChild(div);
   });
 }
@@ -406,11 +457,21 @@ function syncFromDOM(){
 }
 function qDefs_set(i,f,v){if(questionDefs[i])questionDefs[i][f]=v;}
 function setOpt(i,j,v){if(questionDefs[i])questionDefs[i].options[j]=v;}
+function setMatchPair(i,j,side,v){if(questionDefs[i]&&questionDefs[i].pairs[j])questionDefs[i].pairs[j][side]=v;}
+function addMatchPair(i){if(questionDefs[i]&&questionDefs[i].pairs.length<8){questionDefs[i].pairs.push({l:'',r:''});renderQuestions();}}
+function removeMatchPair(i,j){if(questionDefs[i]&&questionDefs[i].pairs.length>2){questionDefs[i].pairs.splice(j,1);renderQuestions();}}
+function setOrderItem(i,j,v){if(questionDefs[i]&&questionDefs[i].items)questionDefs[i].items[j]=v;}
+function addOrderItem(i){if(questionDefs[i]&&questionDefs[i].items.length<8){questionDefs[i].items.push('');renderQuestions();}}
+function removeOrderItem(i,j){if(questionDefs[i]&&questionDefs[i].items.length>2){questionDefs[i].items.splice(j,1);renderQuestions();}}
 function changeQType(i,type){
   if(!questionDefs[i])return;
   questionDefs[i].type=type;
-  questionDefs[i].options=type==='tf'?['Doğru','Yanlış']:['','','',''];
-  questionDefs[i].correct=0;
+  delete questionDefs[i].options; delete questionDefs[i].correct;
+  delete questionDefs[i].pairs; delete questionDefs[i].items;
+  if(type==='mc'){questionDefs[i].options=['','','',''];questionDefs[i].correct=0;}
+  else if(type==='tf'){questionDefs[i].options=['Doğru','Yanlış'];questionDefs[i].correct=0;}
+  else if(type==='matching'){questionDefs[i].pairs=[{l:'',r:''},{l:'',r:''},{l:'',r:''},{l:'',r:''}];}
+  else if(type==='ordering'){questionDefs[i].items=['','','',''];}
   renderQuestions();
 }
 function removeQ(i){questionDefs.splice(i,1);renderQuestions();if(!questionDefs.length)document.getElementById('btn-start-game').disabled=true;}
@@ -493,10 +554,20 @@ async function loadQuestion(idx){
   const img=document.getElementById('q-img');
   if(q.image){img.src=q.image;img.style.display='';}else img.style.display='none';
   document.getElementById('q-text').textContent=q.text||'(Soru metni girilmedi)';
-  const isTF=q.type==='tf', opts=isTF?['Doğru','Yanlış']:(q.options||[]);
   const OC=['oa','ob','oc','od'], SH=['▲','◆','●','■'];
-  document.getElementById('q-answers-grid').innerHTML=opts.map((opt,i)=>`
-    <div class="answer-display-btn ${OC[i]}"><span class="sh">${SH[i]}</span>${esc(opt)}</div>`).join('');
+  let answersHTML='';
+  if(q.type==='matching'){
+    answersHTML=`<div class="match-display">`+(q.pairs||[]).map(p=>`
+      <div class="match-display-row"><span>${esc(p.l)}</span><span>→</span><span>${esc(p.r)}</span></div>`).join('')+`</div>`;
+  } else if(q.type==='ordering'){
+    answersHTML=`<div class="order-display">`+(q.items||[]).map((item,idx)=>`
+      <div class="order-display-row"><div class="order-display-num">${idx+1}</div><span>${esc(item)}</span></div>`).join('')+`</div>`;
+  } else {
+    const isTF=q.type==='tf', opts=isTF?['Doğru','Yanlış']:(q.options||[]);
+    answersHTML=opts.map((opt,i)=>`
+      <div class="answer-display-btn ${OC[i]}"><span class="sh">${SH[i]}</span>${esc(opt)}</div>`).join('');
+  }
+  document.getElementById('q-answers-grid').innerHTML=answersHTML;
   showScreen('question');
   startTimer(q.time||20);
 }
@@ -519,10 +590,12 @@ async function advanceToResults(){
   if(isAdvancing)return; isAdvancing=true;
   if(timerInterval){clearInterval(timerInterval);timerInterval=null;}
   const idx=currentRoom.current_question, q=currentRoom.questions[idx];
-  // reveal on teacher screen
-  document.querySelectorAll('.answer-display-btn').forEach((b,i)=>{
-    b.classList.add(i===q.correct?'correct-reveal':'wrong-reveal');
-  });
+  // reveal on teacher screen (MC/TF only)
+  if(q.type==='mc'||q.type==='tf'){
+    document.querySelectorAll('.answer-display-btn').forEach((b,i)=>{
+      b.classList.add(i===q.correct?'correct-reveal':'wrong-reveal');
+    });
+  }
   setTimeout(async()=>{
     await sb.from('rooms').update({phase:'results'}).eq('code',currentRoom.code);
     const{data:lb}=await sb.from('participants').select('*').eq('room_code',currentRoom.code).order('score',{ascending:false}).limit(10);
@@ -532,18 +605,34 @@ async function advanceToResults(){
 }
 
 function renderResults(q,lb){
-  const isTF=q.type==='tf', opts=isTF?['Doğru','Yanlış']:(q.options||[]);
   const OC=['oa','ob','oc','od'], SH=['▲','◆','●','■'];
-  const correctText=opts[q.correct]||'';
-  document.getElementById('results-header').innerHTML=`✅ Doğru Cevap: <span style="color:#4ade80;margin-left:8px">${esc(correctText)}</span>`;
-  const total=Object.values(answersByOption).reduce((a,b)=>a+b,0)||1;
-  document.getElementById('answer-chart').innerHTML=opts.map((opt,i)=>{
-    const cnt=answersByOption[opt]||0, pct=Math.round(cnt/total*100);
-    return`<div class="chart-bar-wrap">
-      <div class="chart-count-txt">${cnt}</div>
-      <div class="chart-bar ${OC[i]}" style="height:${Math.max(4,pct)}%"></div>
-      <div class="chart-label-txt">${SH[i]}</div>
-    </div>`;}).join('');
+  if(q.type==='matching'){
+    document.getElementById('results-header').innerHTML=`✅ Doğru Eşleştirmeler`;
+    const pairsHTML=(q.pairs||[]).map(p=>`<div class="match-display-row"><span>${esc(p.l)}</span><span>→</span><span style="color:#4ade80">${esc(p.r)}</span></div>`).join('');
+    const correct=answersByOption['✓']||0, total=Object.values(answersByOption).reduce((a,b)=>a+b,0)||1;
+    document.getElementById('answer-chart').innerHTML=`<div style="width:100%;padding:10px 0">
+      <div class="match-display" style="margin-bottom:12px">${pairsHTML}</div>
+      <div style="text-align:center;color:#aaa;font-size:.85rem">${correct} / ${total} öğrenci tam doğru</div></div>`;
+  } else if(q.type==='ordering'){
+    document.getElementById('results-header').innerHTML=`✅ Doğru Sıralama`;
+    const itemsHTML=(q.items||[]).map((item,i)=>`<div class="order-display-row"><div class="order-display-num">${i+1}</div><span style="color:#4ade80">${esc(item)}</span></div>`).join('');
+    const correct=answersByOption['✓']||0, total=Object.values(answersByOption).reduce((a,b)=>a+b,0)||1;
+    document.getElementById('answer-chart').innerHTML=`<div style="width:100%;padding:10px 0">
+      <div class="order-display" style="margin-bottom:12px">${itemsHTML}</div>
+      <div style="text-align:center;color:#aaa;font-size:.85rem">${correct} / ${total} öğrenci tam doğru</div></div>`;
+  } else {
+    const isTF=q.type==='tf', opts=isTF?['Doğru','Yanlış']:(q.options||[]);
+    const correctText=opts[q.correct]||'';
+    document.getElementById('results-header').innerHTML=`✅ Doğru Cevap: <span style="color:#4ade80;margin-left:8px">${esc(correctText)}</span>`;
+    const total=Object.values(answersByOption).reduce((a,b)=>a+b,0)||1;
+    document.getElementById('answer-chart').innerHTML=opts.map((opt,i)=>{
+      const cnt=answersByOption[opt]||0, pct=Math.round(cnt/total*100);
+      return`<div class="chart-bar-wrap">
+        <div class="chart-count-txt">${cnt}</div>
+        <div class="chart-bar ${OC[i]}" style="height:${Math.max(4,pct)}%"></div>
+        <div class="chart-label-txt">${SH[i]}</div>
+      </div>`;}).join('');
+  }
   document.getElementById('lb-list').innerHTML=lb.slice(0,8).map((p,i)=>`
     <div class="lb-row" style="animation-delay:${i*.07}s">
       <div class="lb-rank ${i<3?'r'+(i+1):''}">
@@ -667,7 +756,7 @@ async function importFile(input){
   preview.innerHTML=`<p style="color:#aaa;font-size:.82rem;margin-bottom:10px">${qs.length} soru algılandı:</p>`
     +qs.slice(0,15).map((q,i)=>`
       <div class="import-q-preview">
-        <div class="import-q-num">${i+1}. ${q.type==='tf'?'Doğru/Yanlış':'Çoktan Seçmeli'} · ${q.time}sn</div>
+        <div class="import-q-num">${i+1}. ${{mc:'Çoktan Seçmeli',tf:'Doğru/Yanlış',matching:'Eşleştirme',ordering:'Sıralama'}[q.type]||q.type} · ${q.time}sn</div>
         <div class="import-q-txt">${esc(q.text)}</div>
         ${q.type==='mc'?q.options.filter(o=>o).map((o,j)=>`<span class="import-opt ${j===q.correct?'correct':'wrong'}">${'ABCD'[j]}) ${esc(o)}</span>`).join('')
           :`<span class="import-opt ${q.correct===0?'correct':'wrong'}">Doğru</span><span class="import-opt ${q.correct===1?'correct':'wrong'}">Yanlış</span>`}
