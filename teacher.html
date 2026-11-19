@@ -3,41 +3,831 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>mkakademics – Sınıf Yarışması</title>
+<title>mkakademics – Öğretmen Paneli</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Segoe UI',system-ui,sans-serif;background:linear-gradient(135deg,#1a1a2e 0%,#16213e 60%,#0f0f23 100%);color:#fff;min-height:100vh;display:flex;align-items:center;justify-content:center;}
-.container{text-align:center;padding:32px 20px;max-width:480px;width:100%;}
-.logo{font-size:3rem;font-weight:900;background:linear-gradient(to right,#e040fb,#7c4dff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;}
-.tagline{color:#888;font-size:1rem;margin-bottom:40px;}
-.cards{display:flex;flex-direction:column;gap:16px;}
-.card{background:#16213e;border-radius:20px;padding:24px;border:2px solid #2a2a4a;text-decoration:none;color:#fff;transition:all .2s;display:block;}
-.card:hover{border-color:var(--c);transform:translateY(-3px);box-shadow:0 10px 30px rgba(0,0,0,.4);}
-.card.teacher{--c:#e040fb;}
-.card.student{--c:#1368ce;}
-.card-icon{font-size:2.5rem;margin-bottom:10px;}
-.card-title{font-size:1.3rem;font-weight:700;margin-bottom:6px;}
-.card-desc{font-size:.88rem;color:#888;}
-.footer{margin-top:32px;font-size:.78rem;color:#555;}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#1a1a2e;color:#fff;min-height:100vh;overflow-x:hidden;}
+.screen{display:none;min-height:100vh;}
+.screen.active{display:flex;flex-direction:column;}
+:root{--red:#e21b3c;--blue:#1368ce;--yellow:#d89e00;--green:#26890c;--accent:#e040fb;--card:#16213e;--bg:#1a1a2e;}
+
+/* SETUP */
+#screen-setup{flex-direction:row !important;}
+.sidebar{width:300px;background:var(--card);padding:20px;overflow-y:auto;border-right:1px solid #2a2a4a;flex-shrink:0;display:flex;flex-direction:column;gap:12px;}
+.logo{font-size:1.4rem;font-weight:900;background:linear-gradient(to right,var(--accent),#7c4dff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.btn-new-quiz{width:100%;padding:10px;background:transparent;border:2px dashed var(--accent);color:var(--accent);border-radius:10px;cursor:pointer;font-size:.9rem;transition:all .2s;}
+.btn-new-quiz:hover{background:rgba(224,64,251,.1);}
+.sidebar-title{font-size:.85rem;color:#888;text-transform:uppercase;letter-spacing:1px;}
+.quiz-card{background:#0f0f23;border-radius:12px;padding:12px;cursor:pointer;border:2px solid transparent;transition:all .2s;}
+.quiz-card:hover{border-color:var(--accent);}
+.quiz-card.selected{border-color:var(--accent);background:#1e1e3f;}
+.quiz-card h3{font-size:.9rem;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.quiz-card p{font-size:.75rem;color:#888;}
+.main-editor{flex:1;padding:24px;overflow-y:auto;display:flex;flex-direction:column;gap:16px;}
+.editor-header{display:flex;gap:10px;align-items:center;}
+.quiz-title-input{flex:1;background:var(--card);border:2px solid #2a2a4a;color:#fff;padding:10px 16px;border-radius:10px;font-size:1.1rem;outline:none;transition:border-color .2s;}
+.quiz-title-input:focus{border-color:var(--accent);}
+.btn-primary{padding:10px 20px;background:var(--accent);color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:.9rem;font-weight:600;transition:all .2s;white-space:nowrap;}
+.btn-primary:hover{opacity:.9;transform:translateY(-1px);}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+.btn-success{padding:10px 20px;background:var(--green);color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:.9rem;font-weight:600;transition:all .2s;}
+.btn-success:hover{opacity:.9;}
+.btn-danger{padding:8px 14px;background:var(--red);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:.85rem;transition:all .2s;}
+.btn-danger:hover{opacity:.9;}
+.btn-secondary{padding:8px 16px;background:#2a2a4a;color:#ccc;border:none;border-radius:8px;cursor:pointer;font-size:.85rem;transition:all .2s;}
+.btn-secondary:hover{background:#3a3a5a;color:#fff;}
+.question-list{display:flex;flex-direction:column;gap:14px;}
+.q-card{background:var(--card);border-radius:14px;padding:16px;border:2px solid #2a2a4a;}
+.q-card-header{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+.q-number{width:26px;height:26px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;flex-shrink:0;}
+.q-type-select,.q-time-select{background:#0f0f23;border:1px solid #3a3a5a;color:#fff;padding:4px 8px;border-radius:6px;font-size:.8rem;cursor:pointer;}
+.q-text-input{width:100%;background:#0f0f23;border:1px solid #3a3a5a;color:#fff;padding:9px;border-radius:8px;font-size:.9rem;margin-bottom:8px;resize:vertical;min-height:56px;outline:none;transition:border-color .2s;}
+.q-text-input:focus{border-color:var(--accent);}
+.q-image-input{width:100%;background:#0f0f23;border:1px solid #3a3a5a;color:#888;padding:6px 10px;border-radius:8px;font-size:.78rem;margin-bottom:8px;outline:none;}
+.q-options{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:8px;}
+.q-option{display:flex;align-items:center;gap:7px;background:#0f0f23;border:2px solid transparent;border-radius:9px;padding:7px;}
+.q-option.oa{border-color:rgba(226,27,60,.4);} .q-option.ob{border-color:rgba(19,104,206,.4);} .q-option.oc{border-color:rgba(216,158,0,.4);} .q-option.od{border-color:rgba(38,137,12,.4);}
+.opt-shape{width:26px;height:26px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.9rem;border-radius:6px;}
+.oa .opt-shape{background:var(--red);} .ob .opt-shape{background:var(--blue);} .oc .opt-shape{background:var(--yellow);} .od .opt-shape{background:var(--green);}
+.opt-input{flex:1;background:transparent;border:none;color:#fff;font-size:.82rem;outline:none;}
+.opt-correct{width:18px;height:18px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;}
+.btn-add-q{width:100%;padding:13px;background:var(--card);border:2px dashed #3a3a5a;color:#888;border-radius:12px;cursor:pointer;font-size:.9rem;transition:all .2s;}
+.btn-add-q:hover{border-color:var(--accent);color:var(--accent);}
+.btn-start-game{width:100%;padding:16px;background:linear-gradient(135deg,var(--accent),#7c4dff);color:#fff;border:none;border-radius:14px;cursor:pointer;font-size:1.1rem;font-weight:700;transition:all .2s;letter-spacing:.5px;}
+.btn-start-game:hover{opacity:.9;transform:translateY(-2px);box-shadow:0 8px 25px rgba(224,64,251,.4);}
+.btn-start-game:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none;}
+.btn-icon{background:none;border:none;cursor:pointer;font-size:1rem;padding:3px 7px;border-radius:6px;color:#888;transition:background .2s;}
+.btn-icon:hover{background:#2a2a4a;color:#fff;}
+.btn-import{width:100%;padding:11px;background:#16213e;border:2px solid #2a2a4a;color:#aaa;border-radius:10px;cursor:pointer;font-size:.88rem;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:7px;}
+.btn-import:hover{border-color:var(--accent);color:#fff;}
+.template-link{font-size:.75rem;color:#555;text-align:center;cursor:pointer;text-decoration:underline;}
+.template-link:hover{color:#aaa;}
+.import-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;align-items:center;justify-content:center;padding:16px;}
+.import-modal.open{display:flex;}
+.import-box{background:#16213e;border-radius:18px;padding:22px;max-width:600px;width:100%;max-height:82vh;overflow-y:auto;border:1px solid #2a2a4a;}
+.import-q-preview{background:#0f0f23;border-radius:10px;padding:11px;margin-bottom:8px;}
+.import-q-num{font-size:.72rem;color:var(--accent);margin-bottom:4px;}
+.import-q-txt{font-size:.88rem;margin-bottom:6px;}
+.import-opt{display:inline-block;font-size:.72rem;padding:2px 8px;border-radius:6px;margin:2px;}
+.import-opt.correct{background:rgba(38,137,12,.4);} .import-opt.wrong{background:rgba(255,255,255,.07);}
+.spinner{display:none;text-align:center;padding:20px;color:#aaa;font-size:.9rem;}
+.spinner.show{display:block;}
+
+/* LOBBY */
+#screen-lobby{align-items:center;justify-content:center;background:linear-gradient(135deg,#1a1a2e,#16213e);padding:24px;gap:20px;}
+.lobby-top{display:flex;gap:24px;align-items:flex-start;width:100%;max-width:900px;}
+.pin-box{background:var(--card);border-radius:20px;padding:20px 32px;text-align:center;flex:1;}
+.pin-label{font-size:.85rem;color:#aaa;text-transform:uppercase;letter-spacing:2px;margin-bottom:4px;}
+.pin-code{font-size:3.2rem;font-weight:900;letter-spacing:8px;color:#fff;}
+.pin-url{font-size:.82rem;color:#aaa;margin-top:6px;}
+.qr-box{background:#fff;border-radius:16px;padding:10px;display:flex;align-items:center;justify-content:center;}
+.qr-box img{width:130px;height:130px;display:block;}
+.quiz-info-box{flex:1;background:var(--card);border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:10px;}
+.quiz-info-box h3{font-size:1.2rem;}
+.quiz-info-box p{color:#888;font-size:.88rem;}
+.player-count-line{font-size:.95rem;color:#888;}
+.player-grid{display:flex;flex-wrap:wrap;gap:9px;justify-content:center;max-width:900px;width:100%;min-height:80px;}
+.player-chip{background:var(--card);border-radius:50px;padding:7px 14px;font-size:.9rem;display:flex;align-items:center;gap:7px;animation:popIn .3s ease-out;}
+@keyframes popIn{from{transform:scale(0);opacity:0;}to{transform:scale(1);opacity:1;}}
+
+/* QUESTION */
+#screen-question{background:linear-gradient(135deg,#1a1a2e,#0f0f23);justify-content:space-between;}
+.q-top-bar{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;background:rgba(0,0,0,.35);}
+.q-progress-text{font-size:.9rem;color:#aaa;}
+.q-answer-count-text{font-size:.9rem;color:#aaa;}
+.q-timer-wrap{position:relative;width:84px;height:84px;}
+.q-timer-circle{transform:rotate(-90deg);}
+.timer-bg{fill:none;stroke:#2a2a4a;stroke-width:6;}
+.timer-arc{fill:none;stroke-width:6;stroke-linecap:round;transition:stroke-dashoffset 1s linear;}
+.q-timer-num{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:1.7rem;font-weight:900;}
+.q-main-area{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;gap:16px;}
+.q-image-preview{max-height:180px;border-radius:12px;object-fit:contain;}
+.q-text-display{font-size:1.8rem;font-weight:700;text-align:center;max-width:800px;line-height:1.3;}
+.q-answers-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;max-width:800px;padding:0 20px 20px;}
+.answer-display-btn{display:flex;align-items:center;gap:12px;padding:16px 18px;border-radius:14px;font-size:1.05rem;font-weight:600;border:none;color:#fff;cursor:default;transition:all .3s;}
+.answer-display-btn.oa{background:var(--red);} .answer-display-btn.ob{background:var(--blue);} .answer-display-btn.oc{background:var(--yellow);} .answer-display-btn.od{background:var(--green);}
+.answer-display-btn .sh{width:30px;height:30px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.25);border-radius:7px;font-size:1rem;}
+.answer-display-btn.correct-reveal{animation:correctPulse .5s ease;box-shadow:0 0 30px rgba(255,255,255,.4);}
+.answer-display-btn.wrong-reveal{opacity:.35;filter:grayscale(60%);}
+@keyframes correctPulse{0%{transform:scale(1);}50%{transform:scale(1.04);}100%{transform:scale(1);}}
+
+/* RESULTS */
+#screen-results{background:#1a1a2e;align-items:center;padding:24px;gap:18px;overflow-y:auto;}
+.results-header{font-size:1.4rem;font-weight:700;display:flex;align-items:center;gap:10px;}
+.answer-chart{display:flex;gap:8px;align-items:flex-end;height:150px;background:var(--card);padding:16px;border-radius:16px;width:100%;max-width:680px;}
+.chart-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;height:100%;justify-content:flex-end;}
+.chart-bar{width:100%;border-radius:7px 7px 0 0;transition:height .6s cubic-bezier(.34,1.56,.64,1);min-height:4px;}
+.chart-bar.oa{background:var(--red);} .chart-bar.ob{background:var(--blue);} .chart-bar.oc{background:var(--yellow);} .chart-bar.od{background:var(--green);}
+.chart-label-txt{font-size:.72rem;color:#aaa;text-align:center;}
+.chart-count-txt{font-size:.82rem;font-weight:700;}
+.leaderboard{width:100%;max-width:580px;background:var(--card);border-radius:16px;overflow:hidden;}
+.lb-header{padding:12px 18px;font-size:.85rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:1px;background:rgba(224,64,251,.1);}
+.lb-row{display:flex;align-items:center;padding:11px 18px;gap:12px;border-bottom:1px solid #2a2a4a;animation:slideIn .3s ease-out;}
+@keyframes slideIn{from{transform:translateX(-16px);opacity:0;}to{transform:translateX(0);opacity:1;}}
+.lb-rank{width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.85rem;flex-shrink:0;}
+.lb-rank.r1{color:#ffd700;} .lb-rank.r2{color:#c0c0c0;} .lb-rank.r3{color:#cd7f32;}
+.lb-avatar{font-size:1.2rem;} .lb-name{flex:1;font-weight:600;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;} .lb-score{font-weight:700;color:var(--accent);}
+.results-actions{display:flex;gap:10px;}
+
+/* PODIUM */
+#screen-podium{background:linear-gradient(135deg,#1a1a2e,#0f0f23);align-items:center;justify-content:center;padding:24px;gap:18px;overflow-y:auto;}
+.podium-title-text{font-size:2rem;font-weight:900;background:linear-gradient(to right,#ffd700,var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.podium-wrap{display:flex;align-items:flex-end;gap:8px;}
+.podium-slot{display:flex;flex-direction:column;align-items:center;gap:6px;}
+.podium-av{font-size:1.8rem;} .podium-nm{font-weight:700;font-size:.85rem;text-align:center;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;} .podium-sc{font-size:.75rem;color:#aaa;}
+.podium-block{display:flex;align-items:center;justify-content:center;font-size:1.3rem;font-weight:900;color:rgba(0,0,0,.5);border-radius:9px 9px 0 0;width:85px;}
+.full-results{width:100%;max-width:580px;background:var(--card);border-radius:16px;overflow:hidden;max-height:260px;overflow-y:auto;}
+.podium-actions{display:flex;gap:10px;}
+
+/* TOAST */
+.toast{position:fixed;bottom:18px;right:18px;background:#333;color:#fff;padding:11px 18px;border-radius:10px;font-size:.88rem;z-index:999;animation:fadeUp .3s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+.spacer{flex:1;}
 </style>
 </head>
 <body>
-<div class="container">
-  <div class="logo">mkakademics</div>
-  <div class="tagline">Sınıf için canlı quiz yarışması</div>
-  <div class="cards">
-    <a href="/teacher" class="card teacher">
-      <div class="card-icon">👨‍🏫</div>
-      <div class="card-title">Öğretmen Paneli</div>
-      <div class="card-desc">Quiz oluştur, oyunu yönet, sonuçları takip et</div>
-    </a>
-    <a href="/student" class="card student">
-      <div class="card-icon">📱</div>
-      <div class="card-title">Oyuna Katıl</div>
-      <div class="card-desc">PIN kodunu gir ve yarışmaya başla</div>
-    </a>
+
+<!-- ===== SETUP ===== -->
+<div id="screen-setup" class="screen active">
+  <div class="sidebar">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <span class="logo">mkakademics</span>
+      <span style="font-size:.7rem;background:rgba(224,64,251,.2);color:var(--accent);padding:3px 8px;border-radius:20px;font-weight:600">ÖĞRETMEN</span>
+    </div>
+    <div style="font-size:.78rem;color:#666;border-top:1px solid #2a2a4a;padding-top:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;">
+      <span>👤 <span id="topbar-user-name">—</span></span>
+      <button onclick="mkLogout()" style="background:none;border:1px solid #3a3a5a;color:#666;padding:3px 10px;border-radius:7px;cursor:pointer;font-size:.75rem;" onmouseover="this.style.color='#e21b3c';this.style.borderColor='#e21b3c'" onmouseout="this.style.color='#666';this.style.borderColor='#3a3a5a'">Çıkış</button>
+    </div>
+    <button class="btn-new-quiz" onclick="newQuiz()">＋ Yeni Quiz Oluştur</button>
+    <div class="sidebar-title">📚 Quiz Kütüphanesi</div>
+    <div id="quiz-list"><p style="font-size:.82rem;color:#666">Henüz quiz yok.<br>Yukarıdan yeni quiz oluştur.</p></div>
   </div>
-  <div class="footer">mkakademics • Öğretmenler için ücretsiz</div>
+  <div class="main-editor">
+    <div class="editor-header">
+      <input type="text" id="quiz-title" class="quiz-title-input" placeholder="Quiz adını gir...">
+      <button class="btn-primary" onclick="saveQuiz()">💾 Kaydet</button>
+      <button class="btn-danger" id="btn-del-quiz" onclick="deleteQuiz()" style="display:none">🗑</button>
+    </div>
+    <div id="question-list" class="question-list"></div>
+    <button class="btn-add-q" onclick="addQuestion()">＋ Soru Ekle</button>
+    <button class="btn-import" onclick="document.getElementById('file-import').click()">📂 Dosyadan Yükle (Word / PDF / TXT)</button>
+    <input type="file" id="file-import" accept=".docx,.pdf,.txt" style="display:none" onchange="importFile(this)">
+    <span class="template-link" onclick="downloadTemplate()">📄 Boş şablon indir (.txt)</span>
+    <button class="btn-start-game" id="btn-start-game" onclick="startLobby()" disabled>🚀 Oyunu Başlat</button>
+  </div>
 </div>
+
+<!-- ===== IMPORT MODAL ===== -->
+<div id="import-modal" class="import-modal">
+  <div class="import-box">
+    <h3 style="margin-bottom:6px;font-size:1.05rem">📂 Dosyadan Soru Aktar</h3>
+    <p style="font-size:.8rem;color:#888;margin-bottom:14px">Algılanan sorular aşağıda listelenmiştir. Onayladıktan sonra mevcut listeye eklenir.</p>
+    <div class="spinner" id="import-spinner">⏳ Dosya işleniyor…</div>
+    <div id="import-preview"></div>
+    <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap">
+      <button class="btn-primary" id="btn-confirm-import" onclick="confirmImport()">✅ Soruları Ekle</button>
+      <button class="btn-secondary" onclick="closeImportModal()">İptal</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== LOBBY ===== -->
+<div id="screen-lobby" class="screen">
+  <div class="lobby-top">
+    <div class="pin-box">
+      <div class="pin-label">Oyun PIN Kodu</div>
+      <div class="pin-code" id="lobby-pin">------</div>
+      <div class="pin-url" id="lobby-url">mkakademics.vercel.app/student</div>
+    </div>
+    <div class="qr-box"><img id="lobby-qr" src="" alt="QR Kod"></div>
+    <div class="quiz-info-box">
+      <h3 id="lobby-quiz-name">Quiz</h3>
+      <p id="lobby-quiz-count">0 soru</p>
+      <div style="margin-top:8px;display:flex;gap:8px">
+        <button class="btn-success" onclick="startGame()">▶ Oyunu Başlat</button>
+        <button class="btn-secondary" onclick="backToSetup()">← Geri</button>
+      </div>
+    </div>
+  </div>
+  <div class="player-count-line"><span id="player-count">0</span> oyuncu katıldı</div>
+  <div class="player-grid" id="player-grid"></div>
+</div>
+
+<!-- ===== QUESTION ===== -->
+<div id="screen-question" class="screen">
+  <div class="q-top-bar">
+    <span class="q-progress-text" id="q-progress">Soru 1 / 10</span>
+    <div class="q-timer-wrap">
+      <svg class="q-timer-circle" width="84" height="84" viewBox="0 0 84 84">
+        <circle class="timer-bg" cx="42" cy="42" r="35"/>
+        <circle class="timer-arc" id="timer-arc" cx="42" cy="42" r="35" stroke="#e040fb" stroke-dasharray="219.91" stroke-dashoffset="0"/>
+      </svg>
+      <div class="q-timer-num" id="q-timer-num">20</div>
+    </div>
+    <span class="q-answer-count-text" id="q-ans-count">0 / 0 cevapladı</span>
+  </div>
+  <div class="q-main-area">
+    <img id="q-img" class="q-image-preview" src="" alt="" style="display:none">
+    <div class="q-text-display" id="q-text">Soru metni</div>
+  </div>
+  <div class="q-answers-grid" id="q-answers-grid"></div>
+</div>
+
+<!-- ===== RESULTS ===== -->
+<div id="screen-results" class="screen">
+  <div class="results-header" id="results-header">✅ Doğru Cevap</div>
+  <div class="answer-chart" id="answer-chart"></div>
+  <div class="leaderboard">
+    <div class="lb-header">🏆 Liderlik Tablosu</div>
+    <div id="lb-list"></div>
+  </div>
+  <div class="results-actions">
+    <button class="btn-secondary" onclick="endGame()">🏁 Oyunu Bitir</button>
+    <button class="btn-primary" id="btn-next" onclick="nextQuestion()">Sonraki Soru ➜</button>
+  </div>
+</div>
+
+<!-- ===== PODIUM ===== -->
+<div id="screen-podium" class="screen">
+  <div class="podium-title-text">🏆 Oyun Bitti!</div>
+  <div class="podium-wrap" id="podium-wrap"></div>
+  <div class="full-results">
+    <div class="lb-header">📋 Tüm Sonuçlar</div>
+    <div id="full-lb-list"></div>
+  </div>
+  <div class="podium-actions">
+    <button class="btn-secondary" onclick="downloadCSV()">⬇ CSV İndir</button>
+    <button class="btn-primary" onclick="backToSetup()">🔄 Yeni Oyun</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
+<script src="config.js"></script>
+<script>
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ===== AUTH GUARD =====
+let mkSession = null;
+(function(){
+  try{
+    const s=JSON.parse(localStorage.getItem('mk_session')||'null');
+    if(!s||Date.now()-s.ts>86400000){localStorage.removeItem('mk_session');window.location.href='/login?next=/teacher';return;}
+    mkSession=s;
+    // Üst bar kullanıcı adı
+    const el=document.getElementById('topbar-user-name');
+    if(el) el.textContent=s.fullName||s.username;
+  }catch{window.location.href='/login?next=/teacher';}
+})();
+
+function mkLogout(){localStorage.removeItem('mk_session');window.location.href='/login';}
+// =====================
+
+// State
+let currentRoom = null, currentQuizId = null;
+let timerInterval = null, realtimeChannel = null;
+let participants = [], answerCounts = {}, answersByOption = {}, totalParticipants = 0;
+let isAdvancing = false;
+let questionDefs = [];
+
+// ========== QUIZ LIBRARY ==========
+function loadQuizzes(){ return JSON.parse(localStorage.getItem('mk_quizzes')||'[]'); }
+function persistQuizzes(qs){ localStorage.setItem('mk_quizzes',JSON.stringify(qs)); }
+
+function renderQuizList(){
+  const qs = loadQuizzes();
+  const el = document.getElementById('quiz-list');
+  if(!qs.length){ el.innerHTML='<p style="font-size:.82rem;color:#666">Henüz quiz yok.<br>Yukarıdan yeni quiz oluştur.</p>'; return; }
+  el.innerHTML = qs.map(q=>`
+    <div class="quiz-card ${q.id===currentQuizId?'selected':''}" onclick="loadQuiz('${q.id}')">
+      <h3>${esc(q.title||'İsimsiz Quiz')}</h3>
+      <p>${q.questions.length} soru</p>
+    </div>`).join('');
+}
+
+function newQuiz(){
+  currentQuizId = 'q_'+Date.now();
+  document.getElementById('quiz-title').value='';
+  document.getElementById('question-list').innerHTML='';
+  document.getElementById('btn-del-quiz').style.display='none';
+  document.getElementById('btn-start-game').disabled=true;
+  questionDefs=[];
+  renderQuizList();
+  addQuestion();
+}
+
+function loadQuiz(id){
+  const qs=loadQuizzes(), quiz=qs.find(q=>q.id===id);
+  if(!quiz)return;
+  currentQuizId=id;
+  document.getElementById('quiz-title').value=quiz.title||'';
+  questionDefs=quiz.questions.map(q=>({...q}));
+  renderQuestions();
+  document.getElementById('btn-del-quiz').style.display='';
+  document.getElementById('btn-start-game').disabled=questionDefs.length===0;
+  renderQuizList();
+}
+
+function saveQuiz(){
+  syncFromDOM();
+  const title=document.getElementById('quiz-title').value.trim()||'İsimsiz Quiz';
+  if(!questionDefs.length){toast('⚠️ En az bir soru ekle');return;}
+  const qs=loadQuizzes();
+  const idx=qs.findIndex(q=>q.id===currentQuizId);
+  const quiz={id:currentQuizId,title,questions:questionDefs,updatedAt:new Date().toISOString()};
+  if(idx>=0)qs[idx]=quiz; else qs.push(quiz);
+  persistQuizzes(qs);
+  document.getElementById('btn-del-quiz').style.display='';
+  document.getElementById('btn-start-game').disabled=false;
+  renderQuizList();
+  toast('✅ Quiz kaydedildi');
+}
+
+function deleteQuiz(){
+  if(!confirm('Bu quizi silmek istiyor musun?'))return;
+  persistQuizzes(loadQuizzes().filter(q=>q.id!==currentQuizId));
+  newQuiz(); toast('🗑 Quiz silindi');
+}
+
+// ========== QUESTION EDITOR ==========
+function addQuestion(){
+  questionDefs.push({type:'mc',text:'',image:'',options:['','','',''],correct:0,time:20});
+  renderQuestions();
+  document.getElementById('btn-start-game').disabled=false;
+}
+
+function renderQuestions(){
+  const container=document.getElementById('question-list');
+  container.innerHTML='';
+  const OC=['oa','ob','oc','od'], SH=['▲','◆','●','■'];
+  questionDefs.forEach((q,i)=>{
+    const isTF=q.type==='tf';
+    const opts=isTF?['Doğru','Yanlış']:(q.options||['','','','']);
+    const div=document.createElement('div');
+    div.className='q-card'; div.id='qc'+i;
+    div.innerHTML=`
+      <div class="q-card-header">
+        <div class="q-number">${i+1}</div>
+        <select class="q-type-select" onchange="changeQType(${i},this.value)">
+          <option value="mc" ${q.type==='mc'?'selected':''}>Çoktan Seçmeli</option>
+          <option value="tf" ${q.type==='tf'?'selected':''}>Doğru / Yanlış</option>
+        </select>
+        <select class="q-time-select" onchange="qDefs_set(${i},'time',+this.value)">
+          <option value="10" ${q.time==10?'selected':''}>10 sn</option>
+          <option value="20" ${q.time==20?'selected':''}>20 sn</option>
+          <option value="30" ${q.time==30?'selected':''}>30 sn</option>
+          <option value="60" ${q.time==60?'selected':''}>60 sn</option>
+        </select>
+        <div class="spacer"></div>
+        <button class="btn-icon" onclick="moveQ(${i},-1)" ${i===0?'disabled':''}>↑</button>
+        <button class="btn-icon" onclick="moveQ(${i},1)" ${i===questionDefs.length-1?'disabled':''}>↓</button>
+        <button class="btn-icon" style="color:var(--red)" onclick="removeQ(${i})">✕</button>
+      </div>
+      <textarea class="q-text-input" placeholder="Soru metnini gir..." onchange="qDefs_set(${i},'text',this.value)">${esc(q.text||'')}</textarea>
+      <input type="url" class="q-image-input" placeholder="Görsel URL (opsiyonel – boş bırakabilirsin)" value="${esc(q.image||'')}" onchange="qDefs_set(${i},'image',this.value)">
+      <div class="q-options">
+        ${opts.map((opt,j)=>`
+          <div class="q-option ${OC[j]}">
+            <div class="opt-shape">${SH[j]}</div>
+            ${isTF?`<span style="flex:1;font-size:.85rem">${opt}</span>`:`<input class="opt-input" value="${esc(opt)}" placeholder="Seçenek ${j+1}" onchange="setOpt(${i},${j},this.value)">`}
+            <input type="radio" class="opt-correct" name="cr${i}" ${q.correct===j?'checked':''} onchange="qDefs_set(${i},'correct',${j})" title="Doğru cevap">
+          </div>`).join('')}
+      </div>
+      <div style="font-size:.72rem;color:#666">● Doğru cevabı işaretle</div>`;
+    container.appendChild(div);
+  });
+}
+
+function syncFromDOM(){
+  document.querySelectorAll('.q-text-input').forEach((el,i)=>{if(questionDefs[i])questionDefs[i].text=el.value;});
+  document.querySelectorAll('.q-image-input').forEach((el,i)=>{if(questionDefs[i])questionDefs[i].image=el.value;});
+}
+function qDefs_set(i,f,v){if(questionDefs[i])questionDefs[i][f]=v;}
+function setOpt(i,j,v){if(questionDefs[i])questionDefs[i].options[j]=v;}
+function changeQType(i,type){
+  if(!questionDefs[i])return;
+  questionDefs[i].type=type;
+  questionDefs[i].options=type==='tf'?['Doğru','Yanlış']:['','','',''];
+  questionDefs[i].correct=0;
+  renderQuestions();
+}
+function removeQ(i){questionDefs.splice(i,1);renderQuestions();if(!questionDefs.length)document.getElementById('btn-start-game').disabled=true;}
+function moveQ(i,d){const j=i+d;if(j<0||j>=questionDefs.length)return;[questionDefs[i],questionDefs[j]]=[questionDefs[j],questionDefs[i]];renderQuestions();}
+
+// ========== GAME FLOW ==========
+async function startLobby(){
+  syncFromDOM();
+  if(!questionDefs.length){toast('⚠️ Soru ekle');return;}
+  document.getElementById('btn-start-game').disabled=true;
+  const title=document.getElementById('quiz-title').value.trim()||'Quiz';
+  // cleanup
+  await sb.from('rooms').delete().lt('created_at',new Date(Date.now()-86400000).toISOString());
+  // code
+  const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code=''; for(let i=0;i<6;i++)code+=chars[Math.floor(Math.random()*chars.length)];
+  // create
+  const{data,error}=await sb.from('rooms').insert({
+    code,phase:'lobby',current_question:-1,
+    questions:questionDefs,
+    settings:{title,questionCount:questionDefs.length}
+  }).select().single();
+  if(error){toast('❌ '+error.message);document.getElementById('btn-start-game').disabled=false;return;}
+  currentRoom=data; participants=[]; answerCounts={}; answersByOption={};
+  // lobby UI
+  document.getElementById('lobby-pin').textContent=code;
+  document.getElementById('lobby-quiz-name').textContent=title;
+  document.getElementById('lobby-quiz-count').textContent=questionDefs.length+' soru';
+  const joinUrl=window.location.origin+'/student';
+  document.getElementById('lobby-qr').src=`https://api.qrserver.com/v1/create-qr-code/?size=130x130&data=${encodeURIComponent(joinUrl+'?pin='+code)}`;
+  document.getElementById('lobby-url').textContent=new URL(joinUrl).host+'/student';
+  showScreen('lobby');
+  subscribeRoom(code);
+}
+
+function subscribeRoom(code){
+  if(realtimeChannel)sb.removeChannel(realtimeChannel);
+  realtimeChannel=sb.channel('teacher-'+code)
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'participants',filter:`room_code=eq.${code}`},p=>{
+      participants.push(p.new);totalParticipants=participants.length;
+      renderPlayerGrid();
+    })
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'answers',filter:`room_code=eq.${code}`},p=>{
+      const a=p.new;
+      if(a.question_index===currentRoom.current_question){
+        answerCounts[a.question_index]=(answerCounts[a.question_index]||0)+1;
+        answersByOption[a.answer]=(answersByOption[a.answer]||0)+1;
+        const cnt=answerCounts[a.question_index];
+        document.getElementById('q-ans-count').textContent=`${cnt} / ${totalParticipants} cevapladı`;
+        if(cnt>=totalParticipants&&totalParticipants>0)setTimeout(advanceToResults,400);
+      }
+    })
+    .subscribe();
+}
+
+function renderPlayerGrid(){
+  document.getElementById('player-count').textContent=participants.length;
+  document.getElementById('player-grid').innerHTML=participants.map(p=>`
+    <div class="player-chip"><span>${p.avatar||'😊'}</span>${esc(p.name)}</div>`).join('');
+}
+
+async function startGame(){
+  if(participants.length===0&&!confirm('Hiç oyuncu yok. Yine de başlat?'))return;
+  totalParticipants=participants.length;
+  await loadQuestion(0);
+}
+
+async function loadQuestion(idx){
+  const q=currentRoom.questions[idx];
+  answersByOption={};
+  isAdvancing=false;
+  const now=new Date().toISOString();
+  const{data}=await sb.from('rooms').update({
+    phase:'question',current_question:idx,question_start_time:now
+  }).eq('code',currentRoom.code).select().single();
+  if(data)currentRoom=data;
+  // render
+  document.getElementById('q-progress').textContent=`Soru ${idx+1} / ${currentRoom.questions.length}`;
+  document.getElementById('q-ans-count').textContent=`0 / ${totalParticipants} cevapladı`;
+  const img=document.getElementById('q-img');
+  if(q.image){img.src=q.image;img.style.display='';}else img.style.display='none';
+  document.getElementById('q-text').textContent=q.text||'(Soru metni girilmedi)';
+  const isTF=q.type==='tf', opts=isTF?['Doğru','Yanlış']:(q.options||[]);
+  const OC=['oa','ob','oc','od'], SH=['▲','◆','●','■'];
+  document.getElementById('q-answers-grid').innerHTML=opts.map((opt,i)=>`
+    <div class="answer-display-btn ${OC[i]}"><span class="sh">${SH[i]}</span>${esc(opt)}</div>`).join('');
+  showScreen('question');
+  startTimer(q.time||20);
+}
+
+function startTimer(seconds){
+  if(timerInterval)clearInterval(timerInterval);
+  let rem=seconds;
+  const arc=document.getElementById('timer-arc'), C=219.91;
+  function tick(){
+    document.getElementById('q-timer-num').textContent=rem;
+    arc.style.strokeDashoffset=C*(1-rem/seconds);
+    arc.style.stroke=rem>seconds*.5?'#e040fb':rem>seconds*.25?'#d89e00':'#e21b3c';
+    if(rem<=0){clearInterval(timerInterval);timerInterval=null;advanceToResults();}
+    else rem--;
+  }
+  tick(); timerInterval=setInterval(tick,1000);
+}
+
+async function advanceToResults(){
+  if(isAdvancing)return; isAdvancing=true;
+  if(timerInterval){clearInterval(timerInterval);timerInterval=null;}
+  const idx=currentRoom.current_question, q=currentRoom.questions[idx];
+  // reveal on teacher screen
+  document.querySelectorAll('.answer-display-btn').forEach((b,i)=>{
+    b.classList.add(i===q.correct?'correct-reveal':'wrong-reveal');
+  });
+  setTimeout(async()=>{
+    await sb.from('rooms').update({phase:'results'}).eq('code',currentRoom.code);
+    const{data:lb}=await sb.from('participants').select('*').eq('room_code',currentRoom.code).order('score',{ascending:false}).limit(10);
+    renderResults(q,lb||[]);
+    showScreen('results');
+  },1500);
+}
+
+function renderResults(q,lb){
+  const isTF=q.type==='tf', opts=isTF?['Doğru','Yanlış']:(q.options||[]);
+  const OC=['oa','ob','oc','od'], SH=['▲','◆','●','■'];
+  const correctText=opts[q.correct]||'';
+  document.getElementById('results-header').innerHTML=`✅ Doğru Cevap: <span style="color:#4ade80;margin-left:8px">${esc(correctText)}</span>`;
+  const total=Object.values(answersByOption).reduce((a,b)=>a+b,0)||1;
+  document.getElementById('answer-chart').innerHTML=opts.map((opt,i)=>{
+    const cnt=answersByOption[opt]||0, pct=Math.round(cnt/total*100);
+    return`<div class="chart-bar-wrap">
+      <div class="chart-count-txt">${cnt}</div>
+      <div class="chart-bar ${OC[i]}" style="height:${Math.max(4,pct)}%"></div>
+      <div class="chart-label-txt">${SH[i]}</div>
+    </div>`;}).join('');
+  document.getElementById('lb-list').innerHTML=lb.slice(0,8).map((p,i)=>`
+    <div class="lb-row" style="animation-delay:${i*.07}s">
+      <div class="lb-rank ${i<3?'r'+(i+1):''}">
+        ${i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1)+'.'}
+      </div>
+      <span class="lb-avatar">${p.avatar||'😊'}</span>
+      <span class="lb-name">${esc(p.name)}</span>
+      <span class="lb-score">${p.score.toLocaleString()}</span>
+    </div>`).join('');
+  const isLast=currentRoom.current_question>=currentRoom.questions.length-1;
+  document.getElementById('btn-next').textContent=isLast?'🏆 Sonuçlara Git':'Sonraki Soru ➜';
+}
+
+async function nextQuestion(){
+  const idx=currentRoom.current_question;
+  if(idx>=currentRoom.questions.length-1){endGame();return;}
+  await loadQuestion(idx+1);
+}
+
+async function endGame(){
+  await sb.from('rooms').update({phase:'podium'}).eq('code',currentRoom.code);
+  const{data:lb}=await sb.from('participants').select('*').eq('room_code',currentRoom.code).order('score',{ascending:false});
+  renderPodium(lb||[]);
+  showScreen('podium');
+}
+
+function renderPodium(lb){
+  const order=[lb[1],lb[0],lb[2]].filter(Boolean);
+  const heights=['120px','158px','88px'],colors=['#c0c0c0','#ffd700','#cd7f32'],labels=['2','1','3'];
+  document.getElementById('podium-wrap').innerHTML=order.map((p,i)=>`
+    <div class="podium-slot">
+      <div class="podium-av">${p.avatar||'😊'}</div>
+      <div class="podium-nm">${esc(p.name)}</div>
+      <div class="podium-sc">${p.score.toLocaleString()} puan</div>
+      <div class="podium-block" style="height:${heights[i]};background:${colors[i]}">${labels[i]}</div>
+    </div>`).join('');
+  document.getElementById('full-lb-list').innerHTML=lb.map((p,i)=>`
+    <div class="lb-row">
+      <div class="lb-rank ${i<3?'r'+(i+1):''}">
+        ${i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1)+'.'}
+      </div>
+      <span class="lb-avatar">${p.avatar||'😊'}</span>
+      <span class="lb-name">${esc(p.name)}</span>
+      <span class="lb-score">${p.score.toLocaleString()}</span>
+    </div>`).join('');
+  window._lastResults=lb;
+}
+
+function downloadCSV(){
+  const lb=window._lastResults||[];
+  const rows=[['Sıra','Ad','Puan','Seri'],...lb.map((p,i)=>[i+1,p.name,p.score,p.streak])];
+  const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'})),download:'mkakademics-sonuclar.csv'});
+  a.click();
+}
+
+function backToSetup(){
+  currentRoom=null;participants=[];answerCounts={};isAdvancing=false;
+  if(realtimeChannel){sb.removeChannel(realtimeChannel);realtimeChannel=null;}
+  showScreen('setup');
+  document.getElementById('btn-start-game').disabled=questionDefs.length===0;
+}
+
+// ========== UTILS ==========
+function showScreen(n){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById('screen-'+n).classList.add('active');}
+function toast(m,d=3000){const e=document.querySelector('.toast');if(e)e.remove();const t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),d);}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+// ========== INIT ==========
+renderQuizList();
+const saved=loadQuizzes();
+if(saved.length>0)loadQuiz(saved[saved.length-1].id);
+else newQuiz();
+
+// ========== FILE IMPORT ==========
+let importedQuestions=[];
+
+async function importFile(input){
+  const file=input.files[0];
+  if(!file){return;}
+  input.value='';
+  const ext=file.name.split('.').pop().toLowerCase();
+  document.getElementById('import-spinner').classList.add('show');
+  document.getElementById('import-preview').innerHTML='';
+  document.getElementById('btn-confirm-import').disabled=true;
+  document.getElementById('import-modal').classList.add('open');
+
+  let text='';
+  try{
+    if(ext==='txt'){
+      text=await file.text();
+    } else if(ext==='docx'){
+      if(!window.mammoth){throw new Error('mammoth.js yüklenemedi. Sayfayı yenileyip tekrar dene.');}
+      const ab=await file.arrayBuffer();
+      const result=await mammoth.extractRawText({arrayBuffer:ab});
+      text=result.value;
+    } else if(ext==='pdf'){
+      if(!window.pdfjsLib){throw new Error('pdf.js yüklenemedi. Sayfayı yenileyip tekrar dene.');}
+      text=await extractPdfText(file);
+    } else {
+      throw new Error('Desteklenmeyen dosya türü. .docx, .pdf veya .txt yükle.');
+    }
+  } catch(e){
+    document.getElementById('import-spinner').classList.remove('show');
+    document.getElementById('import-modal').classList.remove('open');
+    toast('❌ '+e.message);
+    return;
+  }
+
+  const qs=parseQuestionsFromText(text);
+  document.getElementById('import-spinner').classList.remove('show');
+
+  if(!qs.length){
+    document.getElementById('import-preview').innerHTML='<p style="color:#e57;font-size:.88rem">⚠️ Hiç soru bulunamadı.<br>Şablonu indirip doldurduğundan emin ol.</p>';
+    return;
+  }
+
+  importedQuestions=qs;
+  document.getElementById('btn-confirm-import').disabled=false;
+  const preview=document.getElementById('import-preview');
+  preview.innerHTML=`<p style="color:#aaa;font-size:.82rem;margin-bottom:10px">${qs.length} soru algılandı:</p>`
+    +qs.slice(0,15).map((q,i)=>`
+      <div class="import-q-preview">
+        <div class="import-q-num">${i+1}. ${q.type==='tf'?'Doğru/Yanlış':'Çoktan Seçmeli'} · ${q.time}sn</div>
+        <div class="import-q-txt">${esc(q.text)}</div>
+        ${q.type==='mc'?q.options.filter(o=>o).map((o,j)=>`<span class="import-opt ${j===q.correct?'correct':'wrong'}">${'ABCD'[j]}) ${esc(o)}</span>`).join('')
+          :`<span class="import-opt ${q.correct===0?'correct':'wrong'}">Doğru</span><span class="import-opt ${q.correct===1?'correct':'wrong'}">Yanlış</span>`}
+      </div>`).join('')
+    +(qs.length>15?`<p style="color:#666;font-size:.78rem">…ve ${qs.length-15} soru daha</p>`:'');
+}
+
+async function extractPdfText(file){
+  const ab=await file.arrayBuffer();
+  const pdf=await pdfjsLib.getDocument({data:ab}).promise;
+  let text='';
+  for(let i=1;i<=pdf.numPages;i++){
+    const page=await pdf.getPage(i);
+    const content=await page.getTextContent();
+    text+=content.items.map(it=>it.str).join(' ')+'\n';
+  }
+  return text;
+}
+
+function parseQuestionsFromText(raw){
+  // Normalize: replace multiple blank lines with single, trim each line
+  const lines=raw.split(/\r?\n/).map(l=>l.trim());
+  const result=[];
+  let cur=null;
+
+  const finishQ=()=>{
+    if(!cur||!cur.text.trim()) return;
+    if(cur.type==='mc'){
+      // ensure at least 2 options filled
+      const filled=cur.options.filter(o=>o.trim());
+      if(filled.length<2) return;
+      // fill blanks with placeholder if needed
+      for(let i=0;i<4;i++) if(!cur.options[i]) cur.options[i]='—';
+    }
+    result.push(cur);
+    cur=null;
+  };
+
+  for(const line of lines){
+    if(!line) continue;
+
+    // ── New question line ──────────────────────────────────────────────
+    // Patterns: "1.", "1)", "Soru 1:", "Soru 1."
+    const qm=line.match(/^(?:Soru\s+)?\d+[\.\)\:]\s+(.+)$/i);
+    if(qm){
+      finishQ();
+      let qtext=qm[1].trim();
+
+      // D/Y question detection
+      const isDY=/^D[\/\\]Y[:：\s]/i.test(qtext)||/^Doğru[\/\\]Yanlış[:：\s]/i.test(qtext);
+      // extract D/Y answer marker from end: (D) or (Y) or [D] or [Y]
+      const dyMatch=qtext.match(/\(([DY])\)\s*$/i)||qtext.match(/\[([DY])\]\s*$/i);
+      const dyCorrect=dyMatch?(dyMatch[1].toUpperCase()==='D'?0:1):0;
+      // strip the marker and the prefix
+      qtext=qtext.replace(/^D[\/\\]Y[:：\s]*/i,'').replace(/^Doğru[\/\\]Yanlış[:：\s]*/i,'').replace(/\s*[\(\[][DY][\)\]]\s*$/i,'').trim();
+
+      cur={
+        type: isDY?'tf':'mc',
+        text: qtext,
+        image: '',
+        options: isDY?['Doğru','Yanlış']:['','','',''],
+        correct: isDY?dyCorrect:0,
+        time: 20
+      };
+      continue;
+    }
+
+    // ── Option line ───────────────────────────────────────────────────
+    if(cur&&cur.type==='mc'){
+      // A) B) C) D)  or  A. B. C. D.
+      const om=line.match(/^([ABCDabcd])[\.\)]\s+(.+)$/);
+      if(om){
+        const idx='abcd'.indexOf(om[1].toLowerCase());
+        let optText=om[2].trim();
+        let correct=false;
+        // correct markers: * ✓ (D) (Doğru) at end
+        if(/[*✓]$/.test(optText)){correct=true; optText=optText.replace(/\s*[*✓]\s*$/,'');}
+        else if(/\(D(?:oğru)?\)\s*$/i.test(optText)){correct=true; optText=optText.replace(/\s*\(D(?:oğru)?\)\s*$/i,'');}
+        if(idx>=0&&idx<4){
+          cur.options[idx]=optText.trim();
+          if(correct) cur.correct=idx;
+        }
+        continue;
+      }
+      // "Cevap: B" or "Doğru cevap: C"
+      const am=line.match(/^(?:cevap|doğru\s*cevap)[:：]\s*([ABCDabcd])/i);
+      if(am){cur.correct='abcd'.indexOf(am[1].toLowerCase()); continue;}
+      // "Süre: 30"
+      const tm=line.match(/^süre[:：]\s*(\d+)/i);
+      if(tm){cur.time=Math.min(120,Math.max(5,parseInt(tm[1]))); continue;}
+    }
+
+    // ── D/Y answer inside block (Cevap: Doğru / Yanlış) ──────────────
+    if(cur&&cur.type==='tf'){
+      const dym=line.match(/^(?:cevap|doğru\s*cevap)[:：]\s*(.+)/i);
+      if(dym){
+        const ans=dym[1].trim().toLowerCase();
+        cur.correct=/^(d|doğru|evet|true)/.test(ans)?0:1;
+        continue;
+      }
+      const tm=line.match(/^süre[:：]\s*(\d+)/i);
+      if(tm){cur.time=Math.min(120,Math.max(5,parseInt(tm[1]))); continue;}
+    }
+  }
+  finishQ();
+  return result;
+}
+
+function closeImportModal(){
+  document.getElementById('import-modal').classList.remove('open');
+  importedQuestions=[];
+}
+
+function confirmImport(){
+  if(!importedQuestions.length) return;
+  questionDefs.push(...importedQuestions.map(q=>({...q})));
+  renderQuestions();
+  document.getElementById('btn-start-game').disabled=false;
+  closeImportModal();
+  toast('✅ '+importedQuestions.length+' soru eklendi!');
+}
+
+function downloadTemplate(){
+  const tpl=`mkakademics – Soru Şablonu
+=============================
+KURALLAR:
+  • Çoktan seçmeli: A) B) C) D) seçenekleri yaz, doğru cevabın sonuna * ekle.
+  • Doğru/Yanlış:   "D/Y:" ile başlat, satır sonuna (D) veya (Y) ekle.
+  • Süre belirtmek: "Süre: 30" satırı ekle (varsayılan 20sn).
+  • Boş satır bırakmak soruları ayırır; boş satır zorunlu değildir.
+
+ÖRNEK SORULAR:
+--------------
+1. Türkiye'nin başkenti neresidir?
+A) İstanbul
+B) Ankara *
+C) İzmir
+D) Bursa
+
+2. Türkiye'nin nüfusu yaklaşık kaçtır?
+A) 50 milyon
+B) 70 milyon
+C) 85 milyon *
+D) 100 milyon
+Süre: 30
+
+3. D/Y: Ankara Türkiye'nin en kalabalık şehridir. (Y)
+
+4. D/Y: Türkiye Avrupa ile Asya'yı birbirine bağlar. (D)
+
+5. Hangisi bir Türk hanedanıdır?
+A) Osmanlı İmparatorluğu *
+B) Roma İmparatorluğu
+C) Bizans İmparatorluğu
+D) Pers İmparatorluğu
+`;
+  const blob=new Blob(['﻿'+tpl],{type:'text/plain;charset=utf-8'});
+  const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(blob),download:'mkakademics-soru-sablonu.txt'});
+  a.click();
+}
+</script>
 </body>
 </html>
