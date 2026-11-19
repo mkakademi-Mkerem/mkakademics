@@ -2,378 +2,344 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-<title>Sınıf Yarışması</title>
-<script src="config.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>mkakademics</title>
 <style>
-:root{--bg:#0f1117;--card:#1a1d26;--card2:#22263a;--accent:#6c63ff;--accent2:#ff6584;
-  --green:#4ade80;--red:#f87171;--yellow:#fbbf24;--text:#e2e8f0;--muted:#8892a4;--border:#2d3350}
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;
-  min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px}
-.hidden{display:none!important}
-.scr{width:100%;max-width:480px}
-.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px}
-h1{font-size:2.2rem;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--accent2));
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.fg{margin-bottom:12px}
-.fg label{display:block;font-size:.78rem;color:var(--muted);margin-bottom:4px}
-input{width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);
-  border-radius:9px;padding:12px 16px;font-size:1rem;outline:none;transition:border .2s;text-align:center}
-input:focus{border-color:var(--accent)}
-.btn{width:100%;padding:14px;border-radius:10px;border:none;font-size:1rem;font-weight:700;
-  cursor:pointer;transition:all .18s;margin-top:4px}
-.bp{background:var(--accent);color:#fff}.bp:hover{background:#5a51e8;transform:translateY(-1px)}
-.bp:active{transform:scale(.97)}
-.btn:disabled{opacity:.35;cursor:default;transform:none!important}
-.err{color:var(--red);font-size:.83rem;text-align:center;margin-top:7px;min-height:18px}
-/* waiting */
-.av{width:68px;height:68px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));
-  display:flex;align-items:center;justify-content:center;font-size:1.9rem;margin:0 auto 14px}
-.code-show{font-size:2.4rem;font-weight:800;letter-spacing:.3em;color:var(--accent);margin:8px 0}
-.pulse{animation:pulse 2s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-/* question */
-.tcirc{width:60px;height:60px;border-radius:50%;background:var(--card2);border:3px solid var(--accent);
-  display:flex;align-items:center;justify-content:center;font-size:1.3rem;font-weight:800;
-  margin:0 auto 14px;transition:border-color .3s,color .3s}
-.tcirc.warn{border-color:var(--yellow);color:var(--yellow)}
-.tcirc.dang{border-color:var(--red);color:var(--red);animation:shk .25s infinite}
-@keyframes shk{0%,100%{transform:translateX(0)}25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
-.qbar{height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-bottom:4px}
-.qbarfill{height:100%;background:var(--accent);border-radius:2px;transition:width .1s linear}
-.qtbox{background:var(--card2);border-radius:11px;padding:14px;margin-bottom:14px;
-  font-size:1rem;font-weight:600;line-height:1.5;text-align:center}
-.opts{display:grid;grid-template-columns:1fr 1fr;gap:9px}
-.ob{padding:14px 10px;border-radius:11px;border:2px solid var(--border);background:var(--card2);
-  color:var(--text);font-size:.92rem;font-weight:600;cursor:pointer;transition:all .14s;
-  display:flex;align-items:center;gap:7px;text-align:left}
-.ol{width:27px;height:27px;border-radius:7px;display:flex;align-items:center;justify-content:center;
-  font-size:.78rem;font-weight:700;flex-shrink:0}
-.ob:hover:not(:disabled){border-color:var(--accent);background:rgba(108,99,255,.12);transform:scale(1.02)}
-.ob.sel{border-color:var(--accent);background:rgba(108,99,255,.2)}
-.ob.cor{border-color:var(--green);background:rgba(74,222,128,.15);animation:bop .35s}
-.ob.wrn{border-color:var(--red);background:rgba(248,113,113,.12);animation:shk2 .35s}
-.ob:disabled{cursor:default}
-@keyframes bop{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
-@keyframes shk2{0%,100%{transform:translateX(0)}30%{transform:translateX(-5px)}70%{transform:translateX(5px)}}
-/* feedback */
-.fbbox{text-align:center;padding:22px}
-.fbi{font-size:3.8rem;animation:pop .35s}
-@keyframes pop{0%{transform:scale(0)}80%{transform:scale(1.12)}100%{transform:scale(1)}}
-.fbt{font-size:1.3rem;font-weight:800;margin:10px 0 4px}
-.fbp{font-size:2.3rem;font-weight:800;color:var(--accent)}
-.fbs{font-size:.9rem;color:var(--yellow);font-weight:600;margin-top:4px}
-.fbtot{font-size:.85rem;color:var(--muted);margin-top:6px}
-.wdots::after{content:'...';animation:ell 1.4s infinite}
-@keyframes ell{0%{content:'.'}33%{content:'..'}66%,100%{content:'...'}}
-/* podium */
-.plb{text-align:left;margin-top:14px}
-.plrow{display:flex;align-items:center;gap:9px;padding:9px 13px;background:var(--card2);
-  border-radius:9px;margin-bottom:5px;font-size:.85rem}
-.plrow.me{border:2px solid var(--accent);background:rgba(108,99,255,.12)}
-.plrank{width:26px;text-align:center;font-weight:700;color:var(--muted)}
-.plname{flex:1}
-.plsc{font-weight:700;color:var(--accent)}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overflow:hidden;touch-action:manipulation;}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#1a1a2e;color:#fff;}
+.screen{display:none;height:100vh;flex-direction:column;}
+.screen.active{display:flex;}
+:root{--red:#e21b3c;--blue:#1368ce;--yellow:#d89e00;--green:#26890c;--accent:#e040fb;}
+
+/* JOIN */
+#screen-join{align-items:center;justify-content:center;padding:20px;gap:14px;background:linear-gradient(135deg,#1a1a2e,#16213e);overflow-y:auto;}
+.logo{font-size:2rem;font-weight:900;background:linear-gradient(to right,var(--accent),#7c4dff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.join-form{width:100%;max-width:340px;display:flex;flex-direction:column;gap:11px;}
+.input-field{width:100%;padding:13px 16px;background:#16213e;border:2px solid #2a2a4a;color:#fff;border-radius:13px;font-size:1rem;outline:none;text-align:center;transition:border-color .2s;}
+.input-field:focus{border-color:var(--accent);}
+.input-field::placeholder{color:#555;}
+.pin-input{font-size:1.5rem;font-weight:700;letter-spacing:6px;text-transform:uppercase;}
+.avatar-label{font-size:.82rem;color:#888;text-align:center;}
+.avatar-grid{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;}
+.av-btn{width:46px;height:46px;background:#16213e;border:2px solid #2a2a4a;border-radius:11px;font-size:1.4rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.av-btn.selected{border-color:var(--accent);background:rgba(224,64,251,.2);}
+.btn-join{width:100%;padding:15px;background:linear-gradient(135deg,var(--accent),#7c4dff);color:#fff;border:none;border-radius:13px;font-size:1.1rem;font-weight:700;cursor:pointer;transition:all .15s;letter-spacing:.4px;}
+.btn-join:active{transform:scale(.97);}
+.btn-join:disabled{opacity:.5;cursor:not-allowed;}
+.err-msg{color:#f87171;font-size:.82rem;text-align:center;min-height:18px;}
+
+/* WAIT */
+#screen-wait{align-items:center;justify-content:center;gap:16px;background:linear-gradient(135deg,#1a1a2e,#16213e);text-align:center;padding:24px;}
+.wait-av{font-size:4rem;}
+.wait-nm{font-size:1.3rem;font-weight:700;}
+.wait-msg{color:#aaa;font-size:.95rem;}
+.dots{display:flex;gap:7px;}
+.dot{width:9px;height:9px;background:var(--accent);border-radius:50%;animation:bounce 1.2s infinite ease-in-out;}
+.dot:nth-child(2){animation-delay:.2s;}
+.dot:nth-child(3){animation-delay:.4s;}
+@keyframes bounce{0%,100%{transform:translateY(0);opacity:.4;}50%{transform:translateY(-8px);opacity:1;}}
+
+/* QUESTION */
+#screen-question{background:#0f0f23;}
+.timer-bar-wrap{height:9px;background:#2a2a4a;flex-shrink:0;}
+.timer-bar{height:100%;background:var(--accent);transition:width 1s linear;border-radius:0 4px 4px 0;}
+.q-info-bar{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;background:rgba(0,0,0,.35);flex-shrink:0;}
+.q-num-txt{font-size:.82rem;color:#aaa;}
+.q-time-txt{font-size:1rem;font-weight:700;}
+.answer-grid{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:9px;padding:13px;}
+.answer-grid.two{grid-template-columns:1fr;}
+.answer-tile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border-radius:16px;border:none;color:#fff;font-size:1rem;font-weight:700;cursor:pointer;padding:16px;user-select:none;transition:transform .1s,opacity .15s;}
+.answer-tile:active{transform:scale(.94);}
+.answer-tile.oa{background:var(--red);} .answer-tile.ob{background:var(--blue);} .answer-tile.oc{background:var(--yellow);color:#111;} .answer-tile.od{background:var(--green);}
+.tile-shape{font-size:1.8rem;}
+
+/* ANSWERED */
+#screen-answered{align-items:center;justify-content:center;gap:14px;background:#0f0f23;text-align:center;padding:24px;}
+.answered-icon{font-size:4rem;}
+.answered-txt{font-size:1.1rem;color:#aaa;}
+
+/* FEEDBACK */
+#screen-feedback{align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center;}
+#screen-feedback.correct{background:linear-gradient(135deg,#0a2a0a,#1a1a2e);}
+#screen-feedback.wrong{background:linear-gradient(135deg,#2a0a0a,#1a1a2e);}
+#screen-feedback.timeout{background:linear-gradient(135deg,#1a1a0a,#1a1a2e);}
+.fb-icon{font-size:5rem;animation:popIn .4s ease-out;}
+.fb-verdict{font-size:1.8rem;font-weight:900;}
+.fb-verdict.c{color:#4ade80;} .fb-verdict.w{color:#f87171;} .fb-verdict.t{color:#fbbf24;}
+.fb-pts{font-size:2.5rem;font-weight:900;color:var(--accent);}
+.fb-streak{font-size:1.2rem;min-height:28px;}
+.fb-rank{font-size:.88rem;color:#aaa;}
+@keyframes popIn{from{transform:scale(.4);opacity:0;}to{transform:scale(1);opacity:1;}}
+
+/* PODIUM */
+#screen-podium{align-items:center;justify-content:center;padding:20px;gap:14px;background:linear-gradient(135deg,#1a1a2e,#0f0f23);text-align:center;overflow-y:auto;}
+.my-rank-box{background:rgba(224,64,251,.12);border:2px solid var(--accent);border-radius:16px;padding:14px 28px;}
+.my-rank-label{font-size:.85rem;color:#aaa;margin-bottom:3px;}
+.my-rank-num{font-size:2.5rem;font-weight:900;}
+.my-rank-score{font-size:.9rem;color:#aaa;}
+.podium-title{font-size:1.4rem;font-weight:700;}
+.mini-podium{display:flex;gap:8px;align-items:flex-end;}
+.mini-slot{display:flex;flex-direction:column;align-items:center;gap:4px;}
+.mini-av{font-size:1.6rem;} .mini-nm{font-size:.7rem;max-width:68px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.mini-block{display:flex;align-items:center;justify-content:center;font-size:.9rem;font-weight:900;color:rgba(0,0,0,.5);border-radius:7px 7px 0 0;width:68px;}
 </style>
 </head>
 <body>
 
 <!-- JOIN -->
-<div class="scr" id="s-join">
-  <div style="text-align:center;margin-bottom:24px">
-    <h1>🎮 Yarışma</h1>
-    <p style="color:var(--muted);font-size:.88rem;margin-top:4px">Hızlı ol, puanı kap!</p>
-  </div>
-  <div class="card">
-    <div class="fg"><label>Oda Kodu</label>
-      <input id="inp-code" placeholder="ABC123" maxlength="6"
-        oninput="this.value=this.value.toUpperCase()"
-        onkeydown="if(event.key==='Enter')document.getElementById('inp-name').focus()">
-    </div>
-    <div class="fg"><label>Adın</label>
-      <input id="inp-name" placeholder="Adını gir" maxlength="20"
-        onkeydown="if(event.key==='Enter')join()">
-    </div>
-    <button class="btn bp" id="joinbtn" onclick="join()">🚀 Katıl!</button>
-    <div class="err" id="joinerr"></div>
+<div id="screen-join" class="screen active">
+  <div class="logo">mkakademics</div>
+  <div class="join-form">
+    <input id="pin-input" class="input-field pin-input" maxlength="6" placeholder="PIN KOD" autocomplete="off" autocorrect="off" spellcheck="false" oninput="this.value=this.value.toUpperCase()">
+    <input id="name-input" class="input-field" maxlength="20" placeholder="Adın">
+    <div class="avatar-label">Avatar seç</div>
+    <div class="avatar-grid" id="avatar-grid"></div>
+    <div class="err-msg" id="join-err"></div>
+    <button class="btn-join" id="btn-join" onclick="joinGame()">Katıl 🚀</button>
   </div>
 </div>
 
-<!-- WAITING -->
-<div class="scr hidden" id="s-wait">
-  <div class="card" style="text-align:center;padding:28px">
-    <div class="av" id="myav">🧑</div>
-    <div id="myname-disp" style="font-size:1.2rem;font-weight:700"></div>
-    <div style="color:var(--muted);font-size:.82rem;margin-top:3px">Oyuna katıldın!</div>
-    <div style="margin:18px 0">
-      <div style="font-size:.75rem;color:var(--muted)">Oda Kodu</div>
-      <div class="code-show" id="code-disp"></div>
-    </div>
-    <div class="pulse" style="color:var(--muted);font-size:.88rem">
-      Öğretmen oyunu başlatana kadar bekle<span class="wdots"></span>
-    </div>
-    <div id="wait-count" style="color:var(--muted);font-size:.8rem;margin-top:8px"></div>
-  </div>
+<!-- WAIT -->
+<div id="screen-wait" class="screen">
+  <div class="wait-av" id="wait-av">😊</div>
+  <div class="wait-nm" id="wait-nm">Oyuncu</div>
+  <div class="wait-msg">Öğretmen oyunu başlatana kadar bekle</div>
+  <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
 </div>
 
 <!-- QUESTION -->
-<div class="scr hidden" id="s-question">
-  <div style="display:flex;justify-content:space-between;font-size:.78rem;color:var(--muted);margin-bottom:5px">
-    <span>Soru <span id="qi">1</span>/<span id="qtot">?</span></span>
-    <span id="qsc" style="font-weight:700;color:var(--accent)">0 puan</span>
+<div id="screen-question" class="screen">
+  <div class="timer-bar-wrap"><div class="timer-bar" id="timer-bar"></div></div>
+  <div class="q-info-bar">
+    <span class="q-num-txt" id="s-q-num">1 / 1</span>
+    <span class="q-time-txt" id="s-time">20</span>
   </div>
-  <div class="qbar"><div class="qbarfill" id="qbf"></div></div>
-  <div class="tcirc" id="tcirc">20</div>
-  <div class="qtbox" id="qtext">...</div>
-  <div class="opts" id="qopts"></div>
+  <div class="answer-grid" id="answer-grid"></div>
+</div>
+
+<!-- ANSWERED -->
+<div id="screen-answered" class="screen">
+  <div class="answered-icon">⏳</div>
+  <div class="answered-txt">Cevabın alındı!<br>Sonuçlar bekleniyor…</div>
 </div>
 
 <!-- FEEDBACK -->
-<div class="scr hidden" id="s-fb">
-  <div class="card fbbox">
-    <div class="fbi" id="fb-icon">🤔</div>
-    <div class="fbt" id="fb-title"></div>
-    <div class="fbp" id="fb-pts"></div>
-    <div class="fbs" id="fb-streak"></div>
-    <div class="fbtot" id="fb-tot"></div>
-    <div style="color:var(--muted);font-size:.82rem;margin-top:14px">
-      Sonraki soru bekleniyor<span class="wdots"></span>
-    </div>
-  </div>
+<div id="screen-feedback" class="screen">
+  <div class="fb-icon" id="fb-icon">✅</div>
+  <div class="fb-verdict" id="fb-verdict">Doğru!</div>
+  <div class="fb-pts" id="fb-pts">+850</div>
+  <div class="fb-streak" id="fb-streak"></div>
+  <div class="fb-rank" id="fb-rank"></div>
 </div>
 
 <!-- PODIUM -->
-<div class="scr hidden" id="s-podium">
-  <div class="card" style="text-align:center;padding:24px">
-    <div style="font-size:3rem" id="my-medal">🏅</div>
-    <div style="font-size:1.2rem;font-weight:800;margin:6px 0" id="my-name-fin"></div>
-    <div style="font-size:2rem;font-weight:800;color:var(--accent);margin-bottom:16px" id="my-score-fin"></div>
-    <div class="plb" id="plb"></div>
-    <button class="btn bp" style="margin-top:16px" onclick="location.reload()">🔄 Yeni Oyuna Katıl</button>
+<div id="screen-podium" class="screen">
+  <div class="podium-title">🏆 Oyun Bitti!</div>
+  <div class="my-rank-box">
+    <div class="my-rank-label">Sıran</div>
+    <div class="my-rank-num" id="my-rank">—</div>
+    <div class="my-rank-score" id="my-score">0 puan</div>
   </div>
+  <div class="mini-podium" id="mini-podium"></div>
+  <div style="color:#666;font-size:.82rem;text-align:center">Öğretmenin ekranında tüm sonuçlar görünüyor</div>
 </div>
 
-<!-- ERROR -->
-<div class="scr hidden" id="s-err">
-  <div class="card" style="text-align:center;padding:28px">
-    <div style="font-size:2.8rem;margin-bottom:12px">😕</div>
-    <h2 id="err-title" style="margin-bottom:8px">Bağlantı Kesildi</h2>
-    <p id="err-msg" style="color:var(--muted);font-size:.88rem;margin-bottom:18px"></p>
-    <button class="btn bp" onclick="location.reload()">Tekrar Dene</button>
-  </div>
-</div>
-
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
 <script>
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const AVATARS=['😊','🦁','🐯','🐧','🦊','🐸','🦄','🐬','🦋','🎃','👾','🤖','🦅','🐙','🌟','🔥'];
 
-const AVATS = ['🧑','👩','🧑‍🎓','👨‍🎓','🦊','🐧','🦁','🐸','🤖','🦄','🐺','🐻','🦝','🐨'];
-const CLRS  = ['#6c63ff','#ff6584','#43b89c','#f59e0b'];
-const LBLS  = ['A','B','C','D'];
-const MEDALS= {1:'🥇',2:'🥈',3:'🥉'};
+let myId=null, myName='', myAvatar='😊', myScore=0, myStreak=0;
+let roomCode='', currentRoom=null, currentQIdx=-1;
+let hasAnswered=false, qStart=0, pendingFeedback=null;
+let timerIv=null, realtimeChannel=null;
 
-let myId   = null;  // participant uuid
-let myCode = null;
-let myName = null;
-let myScore= 0;
-let myStreak=0;
-let curRoom = null;
-let answered= false;
-let timerInt= null;
-let qStart  = null;
-let channel = null;
-
-function showScreen(s) {
-  ['join','wait','question','fb','podium','err'].forEach(n=>
-    document.getElementById('s-'+n).classList.toggle('hidden',n!==s));
+// ========== AVATAR ==========
+function initAvatars(){
+  const g=document.getElementById('avatar-grid');
+  g.innerHTML=AVATARS.map((a,i)=>`<button class="av-btn ${i===0?'selected':''}" onclick="pickAvatar(${i},'${a}')">${a}</button>`).join('');
+  myAvatar=AVATARS[0];
 }
-function showErr(title,msg){
-  document.getElementById('err-title').textContent=title;
-  document.getElementById('err-msg').textContent=msg;
-  showScreen('err');
+function pickAvatar(i,a){
+  document.querySelectorAll('.av-btn').forEach((b,j)=>b.classList.toggle('selected',j===i));
+  myAvatar=a;
 }
 
-// ── Join ───────────────────────────────────────
-async function join() {
-  const code = document.getElementById('inp-code').value.trim().toUpperCase();
-  const name = document.getElementById('inp-name').value.trim();
-  if (!code) return setErr('Oda kodunu gir');
-  if (!name || name.length<2) return setErr('En az 2 karakter isim gir');
+// ========== JOIN ==========
+async function joinGame(){
+  const pin=document.getElementById('pin-input').value.trim().toUpperCase();
+  const name=document.getElementById('name-input').value.trim();
+  const err=document.getElementById('join-err');
+  err.textContent='';
+  if(pin.length!==6){err.textContent='6 haneli PIN gir';return;}
+  if(name.length<2){err.textContent='Adın en az 2 karakter olmalı';return;}
+  document.getElementById('btn-join').disabled=true;
 
-  const btn = document.getElementById('joinbtn');
-  btn.disabled=true; btn.textContent='Bağlanıyor...';
+  const{data:room,error}=await sb.from('rooms').select('*').eq('code',pin).single();
+  if(error||!room){err.textContent='❌ Oda bulunamadı – PIN doğru mu?';document.getElementById('btn-join').disabled=false;return;}
+  if(room.phase!=='lobby'){err.textContent='⚠️ Bu oyun zaten başladı';document.getElementById('btn-join').disabled=false;return;}
 
-  // Oda var mı?
-  const {data:room, error:re} = await sb.from('rooms').select('*').eq('code',code).single();
-  if (re||!room) { btn.disabled=false; btn.textContent='🚀 Katıl!'; return setErr('Oda bulunamadı!'); }
-  if (room.phase!=='lobby') { btn.disabled=false; btn.textContent='🚀 Katıl!'; return setErr('Oyun zaten başladı!'); }
-
-  // Kayıt
-  const {data:p, error:pe} = await sb.from('participants').insert({room_code:code,name}).select().single();
-  if (pe) {
-    btn.disabled=false; btn.textContent='🚀 Katıl!';
-    return setErr(pe.code==='23505' ? 'Bu isim zaten kullanılıyor!' : 'Katılım başarısız!');
+  const{data:p,error:e2}=await sb.from('participants').insert({
+    room_code:pin,name,avatar:myAvatar,score:0,streak:0
+  }).select().single();
+  if(e2){
+    err.textContent=e2.code==='23505'?'⚠️ Bu isim alınmış, başka isim dene':'❌ '+e2.message;
+    document.getElementById('btn-join').disabled=false;return;
   }
-
-  myId=p.id; myCode=code; myName=name; curRoom=room;
-  document.getElementById('myname-disp').textContent=name;
-  document.getElementById('code-disp').textContent=code;
-  document.getElementById('myav').textContent=AVATS[Math.floor(Math.random()*AVATS.length)];
-  subscribeRoom();
+  myId=p.id; myName=name; roomCode=pin; currentRoom=room;
+  document.getElementById('wait-av').textContent=myAvatar;
+  document.getElementById('wait-nm').textContent=myName;
   showScreen('wait');
+  subscribeRoom(pin);
 }
 
-function setErr(msg){
-  document.getElementById('joinerr').textContent=msg;
-  setTimeout(()=>document.getElementById('joinerr').textContent='',3000);
+// ========== REALTIME ==========
+function subscribeRoom(code){
+  if(realtimeChannel)sb.removeChannel(realtimeChannel);
+  realtimeChannel=sb.channel('student-'+code+'-'+Date.now())
+    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'rooms',filter:`code=eq.${code}`},p=>{
+      handleRoom(p.new);
+    })
+    .subscribe(async()=>{
+      // check current state after subscribe
+      const{data}=await sb.from('rooms').select('*').eq('code',code).single();
+      if(data&&data.phase!=='lobby')handleRoom(data);
+    });
 }
 
-// ── Room Subscription ──────────────────────────
-function subscribeRoom() {
-  channel = sb.channel('student-'+myCode+'-'+myId)
-    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'rooms',filter:`code=eq.${myCode}`},
-      (pl)=>handleRoom(pl.new))
-    .on('postgres_changes',{event:'INSERT',schema:'public',table:'participants',filter:`room_code=eq.${myCode}`},
-      (pl)=>{ document.getElementById('wait-count').textContent = ''; })
-    .subscribe();
-}
-
-function handleRoom(room) {
-  curRoom = room;
-  if (room.phase==='question') {
-    const idx = room.current_question;
-    const q   = room.questions[idx];
-    if (!q) return;
-    answered = false;
-    qStart   = new Date(room.question_start_time).getTime();
-    showQuestion(q, idx, room.questions.length, room.settings||{});
-  } else if (room.phase==='results') {
-    clearInterval(timerInt);
-    if (!answered) showTimedOut();
-  } else if (room.phase==='podium') {
-    clearInterval(timerInt);
+function handleRoom(room){
+  currentRoom=room;
+  if(room.phase==='question'){
+    const idx=room.current_question;
+    if(idx!==currentQIdx){
+      currentQIdx=idx; hasAnswered=false; pendingFeedback=null;
+      qStart=new Date(room.question_start_time).getTime();
+      showQuestion(room);
+    }
+  } else if(room.phase==='results'){
+    if(pendingFeedback){
+      const{isCorrect,earned}=pendingFeedback; pendingFeedback=null;
+      showFeedback(isCorrect,earned,true);
+    } else if(!hasAnswered){
+      showFeedback(false,0,false);
+    }
+  } else if(room.phase==='podium'){
     fetchAndShowPodium();
   }
 }
 
-// ── Question ───────────────────────────────────
-function showQuestion(q, idx, total, settings) {
-  document.getElementById('qi').textContent   = idx+1;
-  document.getElementById('qtot').textContent = total;
-  document.getElementById('qsc').textContent  = myScore.toLocaleString()+' puan';
-  document.getElementById('qtext').textContent= q.text;
-
-  document.getElementById('qopts').innerHTML = (q.options||[]).map((o,i)=>`
-    <button class="ob" id="ob${i}" onclick="answer('${i}',${JSON.stringify(q).replace(/'/g,"\\'")})"
-      style="background:var(--card2)">
-      <div class="ol" style="background:${CLRS[i%CLRS.length]}22;color:${CLRS[i%CLRS.length]}">${LBLS[i]||i}</div>
-      <span>${o}</span>
+// ========== QUESTION ==========
+function showQuestion(room){
+  const q=room.questions[room.current_question];
+  const isTF=q.type==='tf';
+  const opts=isTF?['Doğru','Yanlış']:(q.options||[]);
+  const OC=['oa','ob','oc','od'], SH=['▲','◆','●','■'];
+  document.getElementById('s-q-num').textContent=`${room.current_question+1} / ${room.questions.length}`;
+  const grid=document.getElementById('answer-grid');
+  grid.className='answer-grid'+(isTF?' two':'');
+  grid.innerHTML=opts.map((opt,i)=>`
+    <button class="answer-tile ${OC[i]}" onclick="submitAnswer('${esc(opt)}',${i})">
+      <span class="tile-shape">${SH[i]}</span>
+      ${isTF?`<span>${opt}</span>`:''}
     </button>`).join('');
-
-  startTimer(q.timeLimit || (settings.timePerQuestion||20));
   showScreen('question');
+  startStudentTimer(q.time||20);
 }
 
-function startTimer(secs) {
-  clearInterval(timerInt);
-  let rem = secs;
-  const circ = document.getElementById('tcirc');
-  const fill = document.getElementById('qbf');
-  circ.textContent=secs; circ.className='tcirc'; fill.style.width='100%';
-  timerInt = setInterval(()=>{
-    rem-=.1;
-    fill.style.width=Math.max(0,rem/secs*100)+'%';
-    circ.textContent=Math.ceil(rem);
-    if (rem<=5) circ.className='tcirc dang';
-    else if (rem<=10) circ.className='tcirc warn';
-    if (rem<=0) { clearInterval(timerInt); if(!answered){answered=true;disableOpts();} }
-  },100);
+function startStudentTimer(seconds){
+  if(timerIv)clearInterval(timerIv);
+  let rem=seconds;
+  const bar=document.getElementById('timer-bar'), tEl=document.getElementById('s-time');
+  function tick(){
+    const pct=(rem/seconds)*100;
+    bar.style.width=pct+'%';
+    tEl.textContent=rem;
+    bar.style.background=rem<=5?'#e21b3c':rem<=10?'#d89e00':'var(--accent)';
+    if(rem<=0){clearInterval(timerIv);timerIv=null;if(!hasAnswered)showScreen('answered');}
+    else rem--;
+  }
+  tick(); timerIv=setInterval(tick,1000);
 }
 
-function disableOpts() {
-  document.querySelectorAll('.ob').forEach(b=>b.disabled=true);
-}
+// ========== ANSWER ==========
+async function submitAnswer(optText,optIdx){
+  if(hasAnswered)return;
+  hasAnswered=true;
+  if(timerIv){clearInterval(timerIv);timerIv=null;}
+  document.querySelectorAll('.answer-tile').forEach(b=>b.style.pointerEvents='none');
 
-async function answer(val, q) {
-  if (answered) return;
-  answered = true;
-  disableOpts();
-  document.getElementById('ob'+val)?.classList.add('sel');
+  const q=currentRoom.questions[currentQIdx];
+  const timeTaken=Date.now()-qStart;
+  const timeLimit=(q.time||20)*1000;
+  const isCorrect=optIdx===q.correct;
+  let earned=0;
 
-  const timeTaken  = Date.now() - qStart;
-  const isCorrect  = String(val) === String(q.correct);
-  const settings   = curRoom?.settings || {};
-  const maxPts     = settings.maxPoints || 1000;
-  const minPts     = settings.minPoints || 100;
-  const timeLimit  = (q.timeLimit || settings.timePerQuestion || 20) * 1000;
-  let earned = 0;
-
-  if (isCorrect) {
-    const frac = Math.min(timeTaken/timeLimit, 1);
-    earned = Math.round(maxPts - (maxPts-minPts)*frac);
-    if (settings.streakBonus) {
-      myStreak++;
-      const mult = Math.min(1 + (myStreak-1)*0.1, 2.0);
-      earned = Math.round(earned*mult);
-    }
-    myScore += earned;
+  if(isCorrect){
+    const maxP=1000,minP=100;
+    earned=Math.round(maxP-(maxP-minP)*Math.min(timeTaken/timeLimit,1));
+    myStreak++;
+    earned=Math.round(earned*Math.min(1+(myStreak-1)*.1,2.0));
+    myScore+=earned;
+    await sb.from('participants').update({score:myScore,streak:myStreak}).eq('id',myId).catch(()=>{});
   } else {
-    myStreak = 0;
+    myStreak=0;
+    await sb.from('participants').update({streak:0}).eq('id',myId).catch(()=>{});
   }
 
-  // Highlight correct
-  document.getElementById('ob'+q.correct)?.classList.add('cor');
-  if (!isCorrect) document.getElementById('ob'+val)?.classList.add('wrn');
-
-  // Save answer
   await sb.from('answers').insert({
-    room_code: myCode, participant_id: myId,
-    question_index: curRoom.current_question,
-    answer: val, is_correct: isCorrect,
-    earned_points: earned, time_taken_ms: timeTaken
-  });
-  // Update score
-  await sb.from('participants').update({score:myScore,streak:myStreak}).eq('id',myId);
+    room_code:roomCode,participant_id:myId,question_index:currentQIdx,
+    answer:optText,is_correct:isCorrect,earned_points:earned,
+    time_taken_ms:Math.round(timeTaken)
+  }).catch(()=>{});
 
-  setTimeout(()=>{
-    document.getElementById('fb-icon').textContent = isCorrect ? '🎉' : '😞';
-    document.getElementById('fb-title').style.color = isCorrect ? 'var(--green)' : 'var(--red)';
-    document.getElementById('fb-title').textContent = isCorrect ? 'Doğru!' : 'Yanlış!';
-    document.getElementById('fb-pts').textContent   = isCorrect ? '+'+earned.toLocaleString() : '';
-    document.getElementById('fb-streak').textContent= myStreak>1 ? `🔥 ${myStreak} seri! ×${Math.min(1+(myStreak-1)*.1,2).toFixed(1)}` : '';
-    document.getElementById('fb-tot').textContent   = `Toplam: ${myScore.toLocaleString()} puan`;
-    showScreen('fb');
-  }, 450);
+  pendingFeedback={isCorrect,earned};
+  showScreen('answered');
 }
 
-function showTimedOut() {
-  document.getElementById('fb-icon').textContent = '⏰';
-  document.getElementById('fb-title').style.color= 'var(--yellow)';
-  document.getElementById('fb-title').textContent= 'Süre Doldu!';
-  document.getElementById('fb-pts').textContent  = '';
-  document.getElementById('fb-streak').textContent='';
-  document.getElementById('fb-tot').textContent  = `Toplam: ${myScore.toLocaleString()} puan`;
-  myStreak = 0;
-  showScreen('fb');
+function showFeedback(isCorrect,earned,answered){
+  const fb=document.getElementById('screen-feedback');
+  if(!answered) fb.className='screen active timeout';
+  else fb.className='screen active '+(isCorrect?'correct':'wrong');
+  document.getElementById('fb-icon').textContent=!answered?'⏰':isCorrect?'✅':'❌';
+  const v=document.getElementById('fb-verdict');
+  v.className='fb-verdict '+(isCorrect?'c':!answered?'t':'w');
+  v.textContent=!answered?'Süre Doldu!':isCorrect?'Doğru!':'Yanlış!';
+  document.getElementById('fb-pts').textContent=isCorrect?'+'+earned.toLocaleString()+' puan':'0 puan';
+  document.getElementById('fb-streak').textContent=myStreak>1?'🔥 '+myStreak+' Seri!':myStreak===1?'⭐ İlk Puan':'';
+  document.getElementById('fb-rank').textContent='';
+  showScreen('feedback');
 }
 
-// ── Podium ─────────────────────────────────────
-async function fetchAndShowPodium() {
-  const {data:lb} = await sb.from('participants').select('name,score').eq('room_code',myCode).order('score',{ascending:false});
-  const list = lb||[];
-  const rank = list.findIndex(p=>p.name===myName)+1;
-  document.getElementById('my-medal').textContent   = MEDALS[rank]||`#${rank}`;
-  document.getElementById('my-name-fin').textContent= myName;
-  document.getElementById('my-score-fin').textContent= myScore.toLocaleString()+' puan';
-  document.getElementById('plb').innerHTML = list.map((p,i)=>`
-    <div class="plrow ${p.name===myName?'me':''}">
-      <span class="plrank">${MEDALS[i+1]||i+1}</span>
-      <span class="plname">${p.name}</span>
-      <span class="plsc">${(p.score||0).toLocaleString()}</span>
+// ========== PODIUM ==========
+async function fetchAndShowPodium(){
+  const{data:lb}=await sb.from('participants').select('*').eq('room_code',roomCode).order('score',{ascending:false});
+  if(!lb)return;
+  const rank=lb.findIndex(p=>p.id===myId)+1;
+  const me=lb.find(p=>p.id===myId);
+  document.getElementById('my-rank').textContent=rank+'.';
+  document.getElementById('my-score').textContent=(me?.score||0).toLocaleString()+' puan';
+  const order=[lb[1],lb[0],lb[2]].filter(Boolean);
+  const heights=['98px','128px','76px'],colors=['#c0c0c0','#ffd700','#cd7f32'],labels=['2','1','3'];
+  document.getElementById('mini-podium').innerHTML=order.map((p,i)=>`
+    <div class="mini-slot">
+      <div class="mini-av">${p.avatar||'😊'}</div>
+      <div class="mini-nm">${esc(p.name)}</div>
+      <div class="mini-block" style="height:${heights[i]};background:${colors[i]}">${labels[i]}</div>
     </div>`).join('');
   showScreen('podium');
 }
+
+// ========== UTILS ==========
+function showScreen(n){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById('screen-'+n).classList.add('active');}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/'/g,'&#39;');}
+
+// Pre-fill PIN from URL
+const urlPin=new URLSearchParams(window.location.search).get('pin');
+if(urlPin)document.getElementById('pin-input').value=urlPin.toUpperCase();
+
+initAvatars();
 </script>
 </body>
 </html>
