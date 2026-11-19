@@ -54,6 +54,35 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#1a1a2e;color:#fff;}
 .answer-tile.oa{background:var(--red);} .answer-tile.ob{background:var(--blue);} .answer-tile.oc{background:var(--yellow);color:#111;} .answer-tile.od{background:var(--green);}
 .tile-shape{font-size:1.8rem;}
 
+/* MATCHING */
+.matching-ui{flex:1;display:flex;flex-direction:column;padding:10px 13px;gap:8px;overflow-y:auto;}
+.match-cols{display:flex;gap:8px;flex:1;}
+.match-col{flex:1;display:flex;flex-direction:column;gap:7px;}
+.match-col-label{font-size:.72rem;color:#888;text-align:center;margin-bottom:2px;}
+.match-item{padding:11px 10px;border-radius:12px;border:2px solid #2a2a4a;background:#16213e;color:#fff;font-size:.88rem;text-align:center;cursor:pointer;transition:all .15s;user-select:none;word-break:break-word;}
+.match-item:active{transform:scale(.96);}
+.match-item.selected{border-color:var(--accent);background:rgba(224,64,251,.18);box-shadow:0 0 10px rgba(224,64,251,.4);}
+.match-item.paired-0{border-color:var(--red);background:rgba(226,27,60,.18);}
+.match-item.paired-1{border-color:var(--blue);background:rgba(19,104,206,.18);}
+.match-item.paired-2{border-color:var(--yellow);background:rgba(216,158,0,.18);}
+.match-item.paired-3{border-color:var(--green);background:rgba(38,137,12,.18);}
+.match-item.paired-4{border-color:#ff9800;background:rgba(255,152,0,.18);}
+.match-item.paired-5{border-color:#9c27b0;background:rgba(156,39,176,.18);}
+.match-item.paired-6{border-color:#00bcd4;background:rgba(0,188,212,.18);}
+.match-item.paired-7{border-color:#8bc34a;background:rgba(139,195,74,.18);}
+.match-submit-wrap{padding:0 4px 4px;}
+/* ORDERING */
+.ordering-ui{flex:1;display:flex;flex-direction:column;padding:10px 13px;gap:8px;overflow-y:auto;}
+.order-items-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;flex:1;}
+.order-item-btn{position:relative;padding:14px 10px;border-radius:12px;border:2px solid #2a2a4a;background:#16213e;color:#fff;font-size:.9rem;text-align:center;cursor:pointer;transition:all .15s;user-select:none;word-break:break-word;display:flex;align-items:center;justify-content:center;}
+.order-item-btn:active{transform:scale(.96);}
+.order-item-btn.numbered{border-color:var(--accent);background:rgba(224,64,251,.15);}
+.order-badge{position:absolute;top:5px;right:5px;width:22px;height:22px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:900;color:#fff;}
+.order-submit-wrap{padding:0 4px 4px;}
+/* Common submit button */
+.action-submit-btn{width:100%;padding:14px;background:linear-gradient(135deg,var(--accent),#7c4dff);color:#fff;border:none;border-radius:13px;font-size:1rem;font-weight:700;cursor:pointer;transition:all .15s;}
+.action-submit-btn:active{transform:scale(.97);}
+.action-submit-btn:disabled{opacity:.45;cursor:not-allowed;}
 /* ANSWERED */
 #screen-answered{align-items:center;justify-content:center;gap:14px;background:#0f0f23;text-align:center;padding:24px;}
 .answered-icon{font-size:4rem;}
@@ -155,6 +184,10 @@ let myId=null, myName='', myAvatar='😊', myScore=0, myStreak=0;
 let roomCode='', currentRoom=null, currentQIdx=-1;
 let hasAnswered=false, qStart=0, pendingFeedback=null;
 let timerIv=null, realtimeChannel=null;
+// Matching state
+let matchLeftSelected=null, matchPairs={}, matchRightItems=[];
+// Ordering state
+let orderItems=[], orderSelected=[];
 
 // ========== AVATAR ==========
 function initAvatars(){
@@ -233,19 +266,130 @@ function handleRoom(room){
 // ========== QUESTION ==========
 function showQuestion(room){
   const q=room.questions[room.current_question];
-  const isTF=q.type==='tf';
-  const opts=isTF?['Doğru','Yanlış']:(q.options||[]);
-  const OC=['oa','ob','oc','od'], SH=['▲','◆','●','■'];
   document.getElementById('s-q-num').textContent=`${room.current_question+1} / ${room.questions.length}`;
   const grid=document.getElementById('answer-grid');
-  grid.className='answer-grid'+(isTF?' two':'');
-  grid.innerHTML=opts.map((opt,i)=>`
-    <button class="answer-tile ${OC[i]}" onclick="submitAnswer('${esc(opt)}',${i})">
-      <span class="tile-shape">${SH[i]}</span>
-      ${isTF?`<span>${opt}</span>`:''}
-    </button>`).join('');
+
+  if(q.type==='matching'){
+    // Reset matching state
+    matchLeftSelected=null; matchPairs={};
+    const leftItems=(q.pairs||[]).map(p=>p.l);
+    matchRightItems=[...(q.pairs||[]).map(p=>p.r)].sort(()=>Math.random()-.5);
+    grid.className=''; grid.style.display='contents';
+    grid.innerHTML=`<div class="matching-ui">
+      <div class="match-cols">
+        <div class="match-col">
+          <div class="match-col-label">Sol</div>
+          ${leftItems.map((item,i)=>`<div class="match-item" id="ml${i}" onclick="matchSelectLeft(${i})">${esc(item)}</div>`).join('')}
+        </div>
+        <div class="match-col">
+          <div class="match-col-label">Sağ</div>
+          ${matchRightItems.map((item,i)=>`<div class="match-item" id="mr${i}" onclick="matchSelectRight(${i})">${esc(item)}</div>`).join('')}
+        </div>
+      </div>
+      <div class="match-submit-wrap">
+        <button class="action-submit-btn" id="match-submit-btn" disabled onclick="submitMatching()">Gönder ✓</button>
+      </div>
+    </div>`;
+  } else if(q.type==='ordering'){
+    // Reset ordering state
+    orderSelected=[];
+    orderItems=[...(q.items||[])].sort(()=>Math.random()-.5);
+    grid.className=''; grid.style.display='contents';
+    grid.innerHTML=`<div class="ordering-ui">
+      <div class="order-items-grid" id="order-grid">
+        ${orderItems.map((item,i)=>`<div class="order-item-btn" id="oi${i}" onclick="tapOrderItem(${i})">${esc(item)}</div>`).join('')}
+      </div>
+      <div class="order-submit-wrap">
+        <button class="action-submit-btn" id="order-submit-btn" disabled onclick="submitOrdering()">Gönder ✓</button>
+      </div>
+    </div>`;
+  } else {
+    const isTF=q.type==='tf';
+    const opts=isTF?['Doğru','Yanlış']:(q.options||[]);
+    const OC=['oa','ob','oc','od'], SH=['▲','◆','●','■'];
+    grid.className='answer-grid'+(isTF?' two':'');
+    grid.style.display='';
+    grid.innerHTML=opts.map((opt,i)=>`
+      <button class="answer-tile ${OC[i]}" onclick="submitAnswer('${esc(opt)}',${i})">
+        <span class="tile-shape">${SH[i]}</span>
+        ${isTF?`<span>${opt}</span>`:''}
+      </button>`).join('');
+  }
   showScreen('question');
   startStudentTimer(q.time||20);
+}
+
+// ========== MATCHING INTERACTION ==========
+function matchSelectLeft(idx){
+  if(hasAnswered)return;
+  // If already paired, unpair first
+  if(matchPairs[idx]!==undefined){
+    const rIdx=matchPairs[idx];
+    delete matchPairs[idx];
+    document.getElementById('ml'+idx).className='match-item';
+    document.getElementById('mr'+rIdx).className='match-item';
+    matchLeftSelected=null;
+    _updateMatchSubmit(); return;
+  }
+  matchLeftSelected=idx;
+  document.querySelectorAll('[id^="ml"]').forEach(el=>{
+    const i=+el.id.slice(2);
+    if(matchPairs[i]===undefined) el.className='match-item'+(i===idx?' selected':'');
+  });
+}
+function matchSelectRight(rIdx){
+  if(hasAnswered||matchLeftSelected===null)return;
+  // If right item already paired to something, unpair it first
+  for(const [lk,rv] of Object.entries(matchPairs)){
+    if(rv===rIdx){
+      delete matchPairs[lk];
+      document.getElementById('ml'+lk).className='match-item';
+      document.getElementById('mr'+rIdx).className='match-item';
+    }
+  }
+  const colorIdx=Object.keys(matchPairs).length;
+  matchPairs[matchLeftSelected]=rIdx;
+  document.getElementById('ml'+matchLeftSelected).className=`match-item paired-${colorIdx}`;
+  document.getElementById('mr'+rIdx).className=`match-item paired-${colorIdx}`;
+  matchLeftSelected=null;
+  document.querySelectorAll('[id^="ml"]').forEach(el=>{ if(!el.className.includes('paired')) el.className='match-item'; });
+  _updateMatchSubmit();
+}
+function _updateMatchSubmit(){
+  const q=currentRoom.questions[currentQIdx];
+  const total=(q.pairs||[]).length;
+  const btn=document.getElementById('match-submit-btn');
+  if(btn) btn.disabled=Object.keys(matchPairs).length<total;
+}
+
+// ========== ORDERING INTERACTION ==========
+function tapOrderItem(idx){
+  if(hasAnswered)return;
+  const pos=orderSelected.indexOf(idx);
+  if(pos!==-1){
+    // Deselect: remove and re-number following items
+    orderSelected.splice(pos,1);
+  } else {
+    orderSelected.push(idx);
+  }
+  _renderOrderItems();
+  const q=currentRoom.questions[currentQIdx];
+  const total=(q.items||[]).length;
+  const btn=document.getElementById('order-submit-btn');
+  if(btn) btn.disabled=orderSelected.length<total;
+}
+function _renderOrderItems(){
+  orderItems.forEach((item,i)=>{
+    const el=document.getElementById('oi'+i); if(!el)return;
+    const pos=orderSelected.indexOf(i);
+    if(pos!==-1){
+      el.className='order-item-btn numbered';
+      el.innerHTML=`<div class="order-badge">${pos+1}</div>${esc(item)}`;
+    } else {
+      el.className='order-item-btn';
+      el.innerHTML=esc(item);
+    }
+  });
 }
 
 function startStudentTimer(seconds){
@@ -257,45 +401,97 @@ function startStudentTimer(seconds){
     bar.style.width=pct+'%';
     tEl.textContent=rem;
     bar.style.background=rem<=5?'#e21b3c':rem<=10?'#d89e00':'var(--accent)';
-    if(rem<=0){clearInterval(timerIv);timerIv=null;if(!hasAnswered)showScreen('answered');}
+    if(rem<=0){clearInterval(timerIv);timerIv=null;if(!hasAnswered){hasAnswered=true;_recordAnswer('—',false,0);}}
     else rem--;
   }
   tick(); timerIv=setInterval(tick,1000);
 }
 
 // ========== ANSWER ==========
-async function submitAnswer(optText,optIdx){
-  if(hasAnswered)return;
-  hasAnswered=true;
-  if(timerIv){clearInterval(timerIv);timerIv=null;}
-  document.querySelectorAll('.answer-tile').forEach(b=>b.style.pointerEvents='none');
-
-  const q=currentRoom.questions[currentQIdx];
+async function _recordAnswer(answerStr,isCorrect,earned){
   const timeTaken=Date.now()-qStart;
-  const timeLimit=(q.time||20)*1000;
-  const isCorrect=optIdx===q.correct;
-  let earned=0;
-
   if(isCorrect){
-    const maxP=1000,minP=100;
-    earned=Math.round(maxP-(maxP-minP)*Math.min(timeTaken/timeLimit,1));
-    myStreak++;
-    earned=Math.round(earned*Math.min(1+(myStreak-1)*.1,2.0));
-    myScore+=earned;
+    myScore+=earned; myStreak++;
     await sb.from('participants').update({score:myScore,streak:myStreak}).eq('id',myId).catch(()=>{});
   } else {
     myStreak=0;
     await sb.from('participants').update({streak:0}).eq('id',myId).catch(()=>{});
   }
-
   await sb.from('answers').insert({
     room_code:roomCode,participant_id:myId,question_index:currentQIdx,
-    answer:optText,is_correct:isCorrect,earned_points:earned,
+    answer:answerStr,is_correct:isCorrect,earned_points:earned,
     time_taken_ms:Math.round(timeTaken)
   }).catch(()=>{});
-
   pendingFeedback={isCorrect,earned};
   showScreen('answered');
+}
+
+async function submitAnswer(optText,optIdx){
+  if(hasAnswered)return;
+  hasAnswered=true;
+  if(timerIv){clearInterval(timerIv);timerIv=null;}
+  document.querySelectorAll('.answer-tile').forEach(b=>b.style.pointerEvents='none');
+  const q=currentRoom.questions[currentQIdx];
+  const timeTaken=Date.now()-qStart;
+  const timeLimit=(q.time||20)*1000;
+  const isCorrect=optIdx===q.correct;
+  let earned=0;
+  if(isCorrect){
+    const maxP=1000,minP=100;
+    earned=Math.round(maxP-(maxP-minP)*Math.min(timeTaken/timeLimit,1));
+    earned=Math.round(earned*Math.min(1+(myStreak*.1),2.0));
+  }
+  await _recordAnswer(optText,isCorrect,earned);
+}
+
+async function submitMatching(){
+  if(hasAnswered)return;
+  hasAnswered=true;
+  if(timerIv){clearInterval(timerIv);timerIv=null;}
+  document.querySelectorAll('.match-item').forEach(el=>el.style.pointerEvents='none');
+  const btn=document.getElementById('match-submit-btn'); if(btn)btn.disabled=true;
+  const q=currentRoom.questions[currentQIdx];
+  const timeTaken=Date.now()-qStart;
+  const timeLimit=(q.time||30)*1000;
+  // Build submitted pairs: {leftItem: rightItem}
+  const correctPairs=q.pairs||[];
+  let correctCount=0;
+  for(const [lIdx,rIdx] of Object.entries(matchPairs)){
+    const leftVal=correctPairs[+lIdx]?.l;
+    const rightVal=matchRightItems[rIdx];
+    if(correctPairs.some(cp=>cp.l===leftVal&&cp.r===rightVal)) correctCount++;
+  }
+  const isCorrect=correctCount===correctPairs.length;
+  let earned=0;
+  if(correctCount>0){
+    const ratio=correctCount/correctPairs.length;
+    const maxP=1000,minP=100;
+    earned=Math.round((maxP-(maxP-minP)*Math.min(timeTaken/timeLimit,1))*ratio*Math.min(1+(myStreak*.1),2.0));
+  }
+  await _recordAnswer(isCorrect?'✓':'✗',isCorrect,earned);
+}
+
+async function submitOrdering(){
+  if(hasAnswered)return;
+  hasAnswered=true;
+  if(timerIv){clearInterval(timerIv);timerIv=null;}
+  document.querySelectorAll('.order-item-btn').forEach(el=>el.style.pointerEvents='none');
+  const btn=document.getElementById('order-submit-btn'); if(btn)btn.disabled=true;
+  const q=currentRoom.questions[currentQIdx];
+  const timeTaken=Date.now()-qStart;
+  const timeLimit=(q.time||30)*1000;
+  const correctItems=q.items||[];
+  // Map selected order back to actual item values
+  const submittedOrder=orderSelected.map(i=>orderItems[i]);
+  const isCorrect=submittedOrder.length===correctItems.length&&submittedOrder.every((v,i)=>v===correctItems[i]);
+  let correctPos=submittedOrder.filter((v,i)=>v===correctItems[i]).length;
+  let earned=0;
+  if(correctPos>0){
+    const ratio=correctPos/correctItems.length;
+    const maxP=1000,minP=100;
+    earned=Math.round((maxP-(maxP-minP)*Math.min(timeTaken/timeLimit,1))*ratio*Math.min(1+(myStreak*.1),2.0));
+  }
+  await _recordAnswer(isCorrect?'✓':'✗',isCorrect,earned);
 }
 
 function showFeedback(isCorrect,earned,answered){
