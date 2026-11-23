@@ -159,6 +159,26 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#1a1a2e;color:#fff;m
 .toast{position:fixed;bottom:18px;right:18px;background:#333;color:#fff;padding:11px 18px;border-radius:10px;font-size:.88rem;z-index:999;animation:fadeUp .3s ease;}
 @keyframes fadeUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
 .spacer{flex:1;}
+
+/* QUICK START PANEL */
+.quick-panel{background:#16213e;border:1px solid #2a2a4a;border-radius:16px;padding:20px;margin-bottom:14px;}
+.quick-panel-title{font-size:.78rem;color:#888;text-transform:uppercase;letter-spacing:.8px;margin-bottom:14px;}
+.builtin-lib-btn{display:flex;align-items:center;gap:10px;background:#0f0f23;border:2px solid #2a2a4a;color:#ccc;border-radius:12px;padding:12px 14px;cursor:pointer;width:100%;font-size:.88rem;transition:all .2s;margin-bottom:8px;}
+.builtin-lib-btn:hover{border-color:var(--accent);color:#fff;background:#1a1a3e;}
+.builtin-lib-btn .lib-badge{margin-left:auto;background:rgba(224,64,251,.2);color:var(--accent);font-size:.7rem;padding:2px 8px;border-radius:8px;font-weight:700;}
+.quiz-summary-card{background:#0f0f23;border:2px solid rgba(224,64,251,.4);border-radius:14px;padding:16px;margin-bottom:14px;display:none;}
+.quiz-summary-card.visible{display:block;}
+.quiz-summary-title{font-size:1rem;font-weight:700;margin-bottom:8px;}
+.quiz-summary-stats{display:flex;gap:12px;flex-wrap:wrap;}
+.stat-pill{background:#16213e;border-radius:8px;padding:5px 12px;font-size:.78rem;color:#aaa;}
+.stat-pill span{color:#fff;font-weight:700;}
+.editor-toggle{font-size:.75rem;color:#666;cursor:pointer;text-decoration:underline;margin-top:6px;display:inline-block;}
+.editor-toggle:hover{color:var(--accent);}
+.editor-section{display:none;}
+.editor-section.open{display:block;}
+.randomize-row{display:flex;align-items:center;gap:10px;margin-top:10px;}
+.randomize-row label{font-size:.82rem;color:#aaa;}
+.q-count-select{background:#0f0f23;border:1px solid #2a2a4a;color:#fff;padding:4px 10px;border-radius:8px;font-size:.82rem;}
 </style>
 </head>
 <body>
@@ -179,18 +199,53 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#1a1a2e;color:#fff;m
     <div id="quiz-list"><p style="font-size:.82rem;color:#666">Henüz quiz yok.<br>Yukarıdan yeni quiz oluştur.</p></div>
   </div>
   <div class="main-editor">
-    <div class="editor-header">
-      <input type="text" id="quiz-title" class="quiz-title-input" placeholder="Quiz adını gir...">
-      <button class="btn-primary" onclick="saveQuiz()">💾 Kaydet</button>
-      <button class="btn-danger" id="btn-del-quiz" onclick="deleteQuiz()" style="display:none">🗑</button>
+    <!-- QUICK START PANEL -->
+    <div class="quick-panel">
+      <div class="quick-panel-title">⚡ Hazır Soru Kütüphaneleri</div>
+      <button class="builtin-lib-btn" onclick="loadBuiltinLibrary('fivb')">
+        🏐 FIVB Voleybol Kuralları 2025-2028
+        <span class="lib-badge">40 Soru</span>
+      </button>
+      <div class="randomize-row">
+        <label>Kaç soru oynansın?</label>
+        <select class="q-count-select" id="builtin-q-count">
+          <option value="10">10 soru (rastgele)</option>
+          <option value="15">15 soru (rastgele)</option>
+          <option value="20">20 soru (rastgele)</option>
+          <option value="40" selected>Tümü (40 soru)</option>
+        </select>
+      </div>
     </div>
-    <div id="question-list" class="question-list"></div>
-    <button class="btn-add-q" onclick="addQuestion()">＋ Soru Ekle</button>
-    <button class="btn-import" onclick="document.getElementById('file-import').click()">📂 Dosyadan Yükle (Word / PDF / TXT / JSON)</button>
-    <input type="file" id="file-import" accept=".docx,.pdf,.txt,.json" style="display:none" onchange="importFile(this)">
-    <button class="btn-import" onclick="document.getElementById('json-import').click()" style="margin-top:6px">📋 Soru Havuzundan Yükle (JSON)</button>
-    <input type="file" id="json-import" accept=".json" style="display:none" onchange="importJson(this)">
-    <span class="template-link" onclick="downloadTemplate()">📄 Boş şablon indir (.txt)</span>
+
+    <!-- LOADED QUIZ SUMMARY -->
+    <div id="quiz-summary-card" class="quiz-summary-card">
+      <div class="quiz-summary-title" id="summary-title">—</div>
+      <div class="quiz-summary-stats">
+        <div class="stat-pill">Toplam: <span id="summary-total">0</span> soru</div>
+        <div class="stat-pill">Çoktan seçmeli: <span id="summary-mc">0</span></div>
+        <div class="stat-pill">D/Y: <span id="summary-tf">0</span></div>
+        <div class="stat-pill">Eşleştirme: <span id="summary-matching">0</span></div>
+        <div class="stat-pill">Sıralama: <span id="summary-ordering">0</span></div>
+      </div>
+      <span class="editor-toggle" onclick="toggleEditor()">✏️ Soruları düzenle / görüntüle</span>
+    </div>
+
+    <!-- EDITOR (hidden by default) -->
+    <div id="editor-section" class="editor-section">
+      <div class="editor-header">
+        <input type="text" id="quiz-title" class="quiz-title-input" placeholder="Quiz adını gir...">
+        <button class="btn-primary" onclick="saveQuiz()">💾 Kaydet</button>
+        <button class="btn-danger" id="btn-del-quiz" onclick="deleteQuiz()" style="display:none">🗑</button>
+      </div>
+      <div id="question-list" class="question-list"></div>
+      <button class="btn-add-q" onclick="addQuestion()">＋ Soru Ekle</button>
+      <button class="btn-import" onclick="document.getElementById('file-import').click()">📂 Dosyadan Yükle (Word / PDF / TXT / JSON)</button>
+      <input type="file" id="file-import" accept=".docx,.pdf,.txt,.json" style="display:none" onchange="importFile(this)">
+      <button class="btn-import" onclick="document.getElementById('json-import').click()" style="margin-top:6px">📋 Soru Havuzundan Yükle (JSON)</button>
+      <input type="file" id="json-import" accept=".json" style="display:none" onchange="importJson(this)">
+      <span class="template-link" onclick="downloadTemplate()">📄 Boş şablon indir (.txt)</span>
+    </div>
+
     <button class="btn-start-game" id="btn-start-game" onclick="startLobby()" disabled>🚀 Oyunu Başlat</button>
   </div>
 </div>
@@ -310,9 +365,51 @@ let participants = [], answerCounts = {}, answersByOption = {}, totalParticipant
 let isAdvancing = false;
 let questionDefs = [];
 
-// ========== QUIZ LIBRARY ==========
-function loadQuizzes(){ return JSON.parse(localStorage.getItem('mk_quizzes')||'[]'); }
-function persistQuizzes(qs){ localStorage.setItem('mk_quizzes',JSON.stringify(qs)); }
+// ========== QUIZ LIBRARY (Supabase 'quizzes' tablosu) ==========
+// Quizler artık tarayıcıda değil veritabanında, öğretmenin hesabına bağlı tutulur.
+let quizCache = [];
+function loadQuizzes(){ return quizCache; }
+
+async function fetchQuizzes(){
+  const{data,error}=await sb.from('quizzes')
+    .select('id,title,questions,updated_at')
+    .eq('owner_id',mkSession.id)
+    .order('updated_at',{ascending:true});
+  if(error) throw error;
+  quizCache=(data||[]).map(r=>({id:r.id,title:r.title,questions:Array.isArray(r.questions)?r.questions:[],updatedAt:r.updated_at}));
+  return quizCache;
+}
+
+async function upsertQuizRemote(quiz){
+  const{error}=await sb.from('quizzes').upsert({
+    id:quiz.id, owner_id:mkSession.id, title:quiz.title,
+    questions:quiz.questions, updated_at:quiz.updatedAt
+  });
+  if(error) throw error;
+}
+
+async function deleteQuizRemote(id){
+  const{error}=await sb.from('quizzes').delete().eq('id',id).eq('owner_id',mkSession.id);
+  if(error) throw error;
+}
+
+// Bu tarayıcıda eskiden kaydedilmiş quizleri bir kereye mahsus veritabanına taşır.
+// Yerel kopya silinmez (yedek olarak kalır).
+async function migrateLocalQuizzes(){
+  const flag='mk_quizzes_migrated_'+mkSession.id;
+  if(localStorage.getItem(flag)) return 0;
+  let local=[];
+  try{ local=JSON.parse(localStorage.getItem('mk_quizzes')||'[]'); }catch{}
+  const rows=(Array.isArray(local)?local:[])
+    .filter(q=>q&&q.id&&Array.isArray(q.questions)&&q.questions.length)
+    .map(q=>({id:q.id,owner_id:mkSession.id,title:q.title||'İsimsiz Quiz',questions:q.questions,updated_at:q.updatedAt||new Date().toISOString()}));
+  if(rows.length){
+    const{error}=await sb.from('quizzes').upsert(rows,{onConflict:'id',ignoreDuplicates:true});
+    if(error) throw error;
+  }
+  localStorage.setItem(flag,'1');
+  return rows.length;
+}
 
 function renderQuizList(){
   const qs = loadQuizzes();
@@ -325,12 +422,61 @@ function renderQuizList(){
     </div>`).join('');
 }
 
+// ========== BUILT-IN LIBRARIES ==========
+const BUILTIN_LIBS = {
+  fivb: {
+    title: 'FIVB Voleybol Kuralları 2025-2028',
+    questions: [{"type":"mc","text":"Voleybol oyun sahasının boyutları nedir?","options":["20x10 m","18x9 m","16x8 m","15x9 m"],"correct":1,"time":20},{"type":"mc","text":"Standart müsabakalarda serbest bölge minimum kaç metre olmalıdır?","options":["1 m","2 m","3 m","5 m"],"correct":2,"time":20},{"type":"mc","text":"FIVB müsabakalarında yan serbest bölgeler kaç metre olmalıdır?","options":["3 m","4 m","5 m","6 m"],"correct":2,"time":25},{"type":"mc","text":"FIVB müsabakalarında dip serbest bölgeler kaç metre olmalıdır?","options":["3 m","5 m","6.5 m","7 m"],"correct":2,"time":25},{"type":"mc","text":"Erkekler voleybolunda file yüksekliği kaç metredir?","options":["2.33 m","2.40 m","2.43 m","2.50 m"],"correct":2,"time":20},{"type":"mc","text":"Kadınlar voleybolunda file yüksekliği kaç metredir?","options":["2.20 m","2.24 m","2.30 m","2.35 m"],"correct":1,"time":20},{"type":"mc","text":"Voleybol topunun çevresi kaç santimetre olmalıdır?","options":["60-62 cm","63-65 cm","65-67 cm","67-69 cm"],"correct":2,"time":20},{"type":"mc","text":"Voleybol topunun ağırlığı kaç gram olmalıdır?","options":["240-260 g","260-280 g","280-300 g","270-290 g"],"correct":1,"time":20},{"type":"mc","text":"Standart bir voleybol takımı en fazla kaç oyuncudan oluşabilir?","options":["10","12","14","15"],"correct":1,"time":20},{"type":"mc","text":"FIVB/Dünya Büyükler müsabakalarında bir takım en fazla kaç oyuncudan oluşabilir?","options":["12","13","14","16"],"correct":2,"time":25},{"type":"mc","text":"Voleybol oyuncu formalarına yazılabilecek numaralar hangi aralıktadır?","options":["1-15","1-18","1-20","1-25"],"correct":2,"time":20},{"type":"mc","text":"Hücum çizgisi orta çizginin kaç metre gerisindedir?","options":["2 m","2.5 m","3 m","4 m"],"correct":2,"time":20},{"type":"mc","text":"Voleybol sahası zemin çizgileri kaç santimetre genişliğindedir?","options":["3 cm","4 cm","5 cm","7 cm"],"correct":2,"time":20},{"type":"mc","text":"Voleybol müsabakasında minimum hava sıcaklığı kaç derece olmalıdır?","options":["5°C","8°C","10°C","15°C"],"correct":2,"time":20},{"type":"mc","text":"Netice seti (5. set) kaç sayı üzerinden oynanır ve minimum sayı farkı kaçtır?","options":["20 sayı, min 1 fark","15 sayı, min 2 fark","21 sayı, min 2 fark","25 sayı, min 2 fark"],"correct":1,"time":25},{"type":"mc","text":"Bir takım topu karşı tarafa göndermeden önce en fazla kaç kez vurabilir?","options":["2","3","4","5"],"correct":1,"time":15},{"type":"mc","text":"Servis bölgesi kaç metre genişliğindedir?","options":["6 m","7 m","9 m","10 m"],"correct":2,"time":20},{"type":"mc","text":"Standart müsabakalarda minimum aydınlatma kaç lux olmalıdır?","options":["200 lux","300 lux","500 lux","1000 lux"],"correct":1,"time":20},{"type":"mc","text":"FIVB müsabakalarında minimum aydınlatma kaç lux olmalıdır?","options":["500 lux","1000 lux","1500 lux","2000 lux"],"correct":3,"time":25},{"type":"mc","text":"Anten uzunluğu kaç metredir ve çapı kaç milimetredir?","options":["1.60 m, 8 mm","1.80 m, 10 mm","2.00 m, 12 mm","1.80 m, 8 mm"],"correct":1,"time":25},{"type":"tf","text":"Blok teması takımın vuruş hakkından (en fazla 3 vuruş) sayılmaz.","options":["Doğru","Yanlış"],"correct":0,"time":20},{"type":"tf","text":"Libero oyuncusu blok yapabilir.","options":["Doğru","Yanlış"],"correct":1,"time":20},{"type":"tf","text":"Topun sınır çizgisine teması 'dahil top' sayılır.","options":["Doğru","Yanlış"],"correct":0,"time":20},{"type":"tf","text":"Netice setinde (5. set) yeni bir kura atışı yapılır.","options":["Doğru","Yanlış"],"correct":0,"time":20},{"type":"tf","text":"FIVB müsabakalarında serbest oyun boşluğu minimum 12.5 m olmalıdır.","options":["Doğru","Yanlış"],"correct":0,"time":20},{"type":"tf","text":"Arka hat oyuncusu hücum çizgisinin önünden (file yakını) hücum vuruşu yapabilir.","options":["Doğru","Yanlış"],"correct":1,"time":20},{"type":"tf","text":"Dönüş hareketi saat yönünde yapılır.","options":["Doğru","Yanlış"],"correct":0,"time":15},{"type":"tf","text":"Orta çizgi sahanın her iki tarafında da oyun alanı içinde sayılır (her iki takımın da alanına aittir).","options":["Doğru","Yanlış"],"correct":0,"time":20},{"type":"matching","text":"Saha ölçülerini doğru değerleriyle eşleştirin:","pairs":[{"l":"Oyun sahası boyutu","r":"18 × 9 m"},{"l":"Hücum çizgisi mesafesi","r":"3 m"},{"l":"Servis bölgesi genişliği","r":"9 m"},{"l":"Çizgi genişliği","r":"5 cm"}],"time":45},{"type":"matching","text":"File bileşenlerini ölçüleriyle eşleştirin:","pairs":[{"l":"File genişliği (yükseklik)","r":"1 m"},{"l":"Üst bant genişliği","r":"7 cm beyaz"},{"l":"Alt bant genişliği","r":"5 cm"},{"l":"Anten uzunluğu","r":"1.80 m"}],"time":45},{"type":"matching","text":"Oyuncu pozisyonlarını saha bölgesiyle eşleştirin:","pairs":[{"l":"Pozisyon 4","r":"Ön-sol"},{"l":"Pozisyon 3","r":"Ön-orta"},{"l":"Pozisyon 2","r":"Ön-sağ"},{"l":"Pozisyon 6","r":"Arka-orta"},{"l":"Pozisyon 1","r":"Arka-sağ"}],"time":60},{"type":"matching","text":"Top özelliklerini değerleriyle eşleştirin:","pairs":[{"l":"Çevre","r":"65-67 cm"},{"l":"Ağırlık","r":"260-280 g"},{"l":"İç basınç","r":"0.300-0.325 kg/cm²"}],"time":40},{"type":"matching","text":"Vuruş hatalarını tanımlarıyla eşleştirin:","pairs":[{"l":"Dört vuruş","r":"Takımın topa 4 kez vurması"},{"l":"Tutulmuş top","r":"Topun tutulup/fırlatılması"},{"l":"Çift vuruş","r":"Oyuncunun art arda iki kez vurması"},{"l":"Yardımlı vuruş","r":"Destekle topa vurulması"}],"time":50},{"type":"matching","text":"Müsabaka kazanma koşullarını eşleştirin:","pairs":[{"l":"1-4. set kazanma","r":"25 sayı (min 2 fark)"},{"l":"Netice seti (5.) kazanma","r":"15 sayı (min 2 fark)"},{"l":"Maçı kazanma","r":"3 set"}],"time":40},{"type":"matching","text":"Takım kadrosundaki teknik personeli görevleriyle eşleştirin:","pairs":[{"l":"Koç","r":"Teknik talimat verir"},{"l":"Kaptan","r":"Sahada hakemle iletişim kurar"},{"l":"Terapist","r":"Oyuncu sağlığına bakar"}],"time":40},{"type":"ordering","text":"Dönüş sonrası oyuncuların geçtiği pozisyonları saat yönünde sırala (servisi almak için 2'den başlar):","items":["Pozisyon 2 → Pozisyon 1 (servis atar)","Pozisyon 1 → Pozisyon 6","Pozisyon 6 → Pozisyon 5","Pozisyon 5 → Pozisyon 4"],"time":45},{"type":"ordering","text":"Ön hat pozisyonlarını soldan sağa doğru sırala:","items":["Pozisyon 4 (ön-sol)","Pozisyon 3 (ön-orta)","Pozisyon 2 (ön-sağ)"],"time":30},{"type":"ordering","text":"FIVB serbest alanlarını küçükten büyüğe doğru sırala:","items":["Yan serbest bölge: 5 m","Dip serbest bölge: 6.5 m","Serbest oyun boşluğu: 12.5 m"],"time":35},{"type":"ordering","text":"Bir setin başında yapılacak işlemleri doğru sıraya koy:","items":["Kura atışı yapılır (ilk sette)","Koç diziliş kâğıdını verir","Resmi ısınma yapılır","Başhakem servis düdüğü çalar"],"time":45},{"type":"ordering","text":"Voleybol topunun özelliklerini küçük değerden büyük değere sırala:","items":["İç basınç: 0.300-0.325 kg/cm²","Ağırlık: 260-280 g","Çevre: 65-67 cm"],"time":35}]
+  }
+};
+
+function shuffleArray(arr){
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+  return a;
+}
+
+function loadBuiltinLibrary(key){
+  const lib=BUILTIN_LIBS[key];
+  if(!lib)return;
+  const countVal=parseInt(document.getElementById('builtin-q-count').value)||40;
+  let qs=lib.questions;
+  if(countVal<qs.length) qs=shuffleArray(qs).slice(0,countVal);
+  currentQuizId='q_builtin_'+key+'_'+Date.now();
+  questionDefs=qs.map(q=>({...q}));
+  document.getElementById('quiz-title').value=lib.title+(countVal<lib.questions.length?` (${countVal} soru)`:'');
+  document.getElementById('btn-start-game').disabled=false;
+  updateSummaryCard(lib.title+(countVal<lib.questions.length?` — ${countVal} soru`:''));
+  toast(`✅ ${questionDefs.length} soru yüklendi`);
+}
+
+function updateSummaryCard(title){
+  const card=document.getElementById('quiz-summary-card');
+  card.classList.add('visible');
+  document.getElementById('summary-title').textContent=title||'Yüklü Quiz';
+  document.getElementById('summary-total').textContent=questionDefs.length;
+  document.getElementById('summary-mc').textContent=questionDefs.filter(q=>q.type==='mc').length;
+  document.getElementById('summary-tf').textContent=questionDefs.filter(q=>q.type==='tf').length;
+  document.getElementById('summary-matching').textContent=questionDefs.filter(q=>q.type==='matching').length;
+  document.getElementById('summary-ordering').textContent=questionDefs.filter(q=>q.type==='ordering').length;
+}
+
+function toggleEditor(){
+  const sec=document.getElementById('editor-section');
+  const isOpen=sec.classList.toggle('open');
+  document.querySelector('.editor-toggle').textContent=isOpen?'✖ Düzenleyiciyi kapat':'✏️ Soruları düzenle / görüntüle';
+  if(isOpen) renderQuestions();
+}
+
+// ========== QUIZ MANAGEMENT ==========
 function newQuiz(){
   currentQuizId = 'q_'+Date.now();
   document.getElementById('quiz-title').value='';
   document.getElementById('question-list').innerHTML='';
   document.getElementById('btn-del-quiz').style.display='none';
   document.getElementById('btn-start-game').disabled=true;
+  document.getElementById('quiz-summary-card').classList.remove('visible');
+  document.getElementById('editor-section').classList.add('open');
   questionDefs=[];
   renderQuizList();
   addQuestion();
@@ -342,30 +488,45 @@ function loadQuiz(id){
   currentQuizId=id;
   document.getElementById('quiz-title').value=quiz.title||'';
   questionDefs=quiz.questions.map(q=>({...q}));
-  renderQuestions();
   document.getElementById('btn-del-quiz').style.display='';
   document.getElementById('btn-start-game').disabled=questionDefs.length===0;
+  updateSummaryCard(quiz.title||'Quiz');
+  document.getElementById('editor-section').classList.remove('open');
+  document.querySelector('.editor-toggle').textContent='✏️ Soruları düzenle / görüntüle';
   renderQuizList();
 }
 
-function saveQuiz(){
+async function saveQuiz(){
   syncFromDOM();
   const title=document.getElementById('quiz-title').value.trim()||'İsimsiz Quiz';
   if(!questionDefs.length){toast('⚠️ En az bir soru ekle');return;}
-  const qs=loadQuizzes();
-  const idx=qs.findIndex(q=>q.id===currentQuizId);
-  const quiz={id:currentQuizId,title,questions:questionDefs,updatedAt:new Date().toISOString()};
-  if(idx>=0)qs[idx]=quiz; else qs.push(quiz);
-  persistQuizzes(qs);
+  const quiz={id:currentQuizId,title,questions:questionDefs.map(q=>({...q})),updatedAt:new Date().toISOString()};
+  try{
+    await upsertQuizRemote(quiz);
+  }catch(e){
+    console.error(e);
+    toast('❌ Kaydedilemedi: '+(e.message||e),6000);
+    return;
+  }
+  const idx=quizCache.findIndex(q=>q.id===currentQuizId);
+  if(idx>=0)quizCache[idx]=quiz; else quizCache.push(quiz);
   document.getElementById('btn-del-quiz').style.display='';
   document.getElementById('btn-start-game').disabled=false;
+  updateSummaryCard(title);
   renderQuizList();
-  toast('✅ Quiz kaydedildi');
+  toast('✅ Quiz kaydedildi (hesabına)');
 }
 
-function deleteQuiz(){
+async function deleteQuiz(){
   if(!confirm('Bu quizi silmek istiyor musun?'))return;
-  persistQuizzes(loadQuizzes().filter(q=>q.id!==currentQuizId));
+  try{
+    await deleteQuizRemote(currentQuizId);
+  }catch(e){
+    console.error(e);
+    toast('❌ Silinemedi: '+(e.message||e),6000);
+    return;
+  }
+  quizCache=quizCache.filter(q=>q.id!==currentQuizId);
   newQuiz(); toast('🗑 Quiz silindi');
 }
 
@@ -704,10 +865,22 @@ function toast(m,d=3000){const e=document.querySelector('.toast');if(e)e.remove(
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
 // ========== INIT ==========
-renderQuizList();
-const saved=loadQuizzes();
-if(saved.length>0)loadQuiz(saved[saved.length-1].id);
-else newQuiz();
+(async function initLibrary(){
+  if(!mkSession||!mkSession.id) return;
+  document.getElementById('quiz-list').innerHTML='<p style="font-size:.82rem;color:#666">⏳ Kütüphane yükleniyor…</p>';
+  try{
+    const moved=await migrateLocalQuizzes();
+    await fetchQuizzes();
+    if(moved) toast(`☁️ Bu tarayıcıdaki ${moved} quiz hesabına taşındı`,5000);
+  }catch(e){
+    console.error(e);
+    toast('❌ Quiz kütüphanesi yüklenemedi: '+(e.message||e),8000);
+  }
+  renderQuizList();
+  const saved=loadQuizzes();
+  if(saved.length>0) loadQuiz(saved[saved.length-1].id);
+  else newQuiz();
+})();
 
 // ========== FILE IMPORT ==========
 let importedQuestions=[];
@@ -947,6 +1120,7 @@ function confirmImport(){
   questionDefs.push(...importedQuestions.map(q=>({...q})));
   renderQuestions();
   document.getElementById('btn-start-game').disabled=false;
+  updateSummaryCard(document.getElementById('quiz-title').value||'İçe Aktarılan Quiz');
   closeImportModal();
   toast('✅ '+importedQuestions.length+' soru eklendi!');
 }
