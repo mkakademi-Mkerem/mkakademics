@@ -52,7 +52,9 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#1a1a2e;color:#fff;}
 .answer-tile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border-radius:16px;border:none;color:#fff;font-size:1rem;font-weight:700;cursor:pointer;padding:16px;user-select:none;transition:transform .1s,opacity .15s;}
 .answer-tile:active{transform:scale(.94);}
 .answer-tile.oa{background:var(--red);} .answer-tile.ob{background:var(--blue);} .answer-tile.oc{background:var(--yellow);color:#111;} .answer-tile.od{background:var(--green);}
-.tile-shape{font-size:1.8rem;}
+.tile-shape{font-size:1.4rem;}
+.tile-text{font-size:.95rem;line-height:1.25;text-align:center;word-break:break-word;}
+.s-q-text{padding:12px 14px 4px;font-size:1.05rem;font-weight:700;line-height:1.35;color:#fff;flex-shrink:0;max-height:30vh;overflow-y:auto;}
 
 /* MATCHING */
 .matching-ui{flex:1;display:flex;flex-direction:column;padding:10px 13px;gap:8px;overflow-y:auto;}
@@ -144,6 +146,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#1a1a2e;color:#fff;}
     <span class="q-num-txt" id="s-q-num">1 / 1</span>
     <span class="q-time-txt" id="s-time">20</span>
   </div>
+  <div class="s-q-text" id="s-q-text"></div>
   <div class="answer-grid" id="answer-grid"></div>
 </div>
 
@@ -184,6 +187,7 @@ let myId=null, myName='', myAvatar='😊', myScore=0, myStreak=0;
 let roomCode='', currentRoom=null, currentQIdx=-1;
 let hasAnswered=false, qStart=0, pendingFeedback=null;
 let timerIv=null, realtimeChannel=null;
+let roomQuestions=null; // Realtime UPDATE yükünde büyük JSONB (questions) gelmeyebilir; katılırken önbelleğe alınır
 // Matching state
 let matchLeftSelected=null, matchPairs={}, matchRightItems=[];
 // Ordering state
@@ -222,6 +226,7 @@ async function joinGame(){
     document.getElementById('btn-join').disabled=false;return;
   }
   myId=p.id; myName=name; roomCode=pin; currentRoom=room;
+  roomQuestions=Array.isArray(room.questions)?room.questions:null;
   document.getElementById('wait-av').textContent=myAvatar;
   document.getElementById('wait-nm').textContent=myName;
   showScreen('wait');
@@ -242,7 +247,17 @@ function subscribeRoom(code){
     });
 }
 
-function handleRoom(room){
+async function ensureQuestions(room){
+  if(Array.isArray(room.questions)&&room.questions.length){roomQuestions=room.questions;return room;}
+  if(!roomQuestions){
+    const{data}=await sb.from('rooms').select('questions').eq('code',roomCode).single();
+    if(data&&Array.isArray(data.questions))roomQuestions=data.questions;
+  }
+  return {...room,questions:roomQuestions||[]};
+}
+
+async function handleRoom(rawRoom){
+  const room=await ensureQuestions(rawRoom);
   currentRoom=room;
   if(room.phase==='question'){
     const idx=room.current_question;
@@ -266,7 +281,9 @@ function handleRoom(room){
 // ========== QUESTION ==========
 function showQuestion(room){
   const q=room.questions[room.current_question];
+  if(!q){console.error('Soru bulunamadı',room.current_question,room.questions);return;}
   document.getElementById('s-q-num').textContent=`${room.current_question+1} / ${room.questions.length}`;
+  document.getElementById('s-q-text').textContent=q.text||'';
   const grid=document.getElementById('answer-grid');
 
   if(q.type==='matching'){
@@ -310,9 +327,9 @@ function showQuestion(room){
     grid.className='answer-grid'+(isTF?' two':'');
     grid.style.display='';
     grid.innerHTML=opts.map((opt,i)=>`
-      <button class="answer-tile ${OC[i]}" onclick="submitAnswer('${esc(opt)}',${i})">
+      <button class="answer-tile ${OC[i]}" onclick="submitAnswerIdx(${i})">
         <span class="tile-shape">${SH[i]}</span>
-        ${isTF?`<span>${opt}</span>`:''}
+        <span class="tile-text">${esc(opt)}</span>
       </button>`).join('');
   }
   showScreen('question');
@@ -410,20 +427,33 @@ function startStudentTimer(seconds){
 // ========== ANSWER ==========
 async function _recordAnswer(answerStr,isCorrect,earned){
   const timeTaken=Date.now()-qStart;
-  if(isCorrect){
-    myScore+=earned; myStreak++;
-    await sb.from('participants').update({score:myScore,streak:myStreak}).eq('id',myId).catch(()=>{});
-  } else {
-    myStreak=0;
-    await sb.from('participants').update({streak:0}).eq('id',myId).catch(()=>{});
-  }
-  await sb.from('answers').insert({
-    room_code:roomCode,participant_id:myId,question_index:currentQIdx,
-    answer:answerStr,is_correct:isCorrect,earned_points:earned,
-    time_taken_ms:Math.round(timeTaken)
-  }).catch(()=>{});
+  // Not: supabase-js sorgu nesnelerinde .catch() yok (sadece then) — hata {error} olarak döner
+  try{
+    if(isCorrect){
+      myScore+=earned; myStreak++;
+      const{error}=await sb.from('participants').update({score:myScore,streak:myStreak}).eq('id',myId);
+      if(error)console.error('Puan güncellenemedi',error);
+    } else {
+      myStreak=0;
+      const{error}=await sb.from('participants').update({streak:0}).eq('id',myId);
+      if(error)console.error('Seri sıfırlanamadı',error);
+    }
+    const{error:aErr}=await sb.from('answers').insert({
+      room_code:roomCode,participant_id:myId,question_index:currentQIdx,
+      answer:answerStr,is_correct:isCorrect,earned_points:earned,
+      time_taken_ms:Math.round(timeTaken)
+    });
+    if(aErr)console.error('Cevap kaydedilemedi',aErr);
+  }catch(e){console.error(e);}
   pendingFeedback={isCorrect,earned};
   showScreen('answered');
+}
+
+function submitAnswerIdx(i){
+  const q=currentRoom&&currentRoom.questions?currentRoom.questions[currentQIdx]:null;
+  if(!q)return;
+  const opts=q.type==='tf'?['Doğru','Yanlış']:(q.options||[]);
+  submitAnswer(opts[i]??String(i),i);
 }
 
 async function submitAnswer(optText,optIdx){
