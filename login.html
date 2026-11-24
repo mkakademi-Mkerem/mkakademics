@@ -62,11 +62,6 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   }
 })();
 
-async function sha256(str){
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
-  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
-}
-
 async function doLogin(){
   const username = document.getElementById('inp-username').value.trim().toLowerCase();
   const password = document.getElementById('inp-password').value;
@@ -80,19 +75,18 @@ async function doLogin(){
   btn.disabled=true;
   btn.innerHTML='<span class="spinner"></span>Kontrol ediliyor…';
 
-  const hash = await sha256(password);
-
-  const{data,error}=await sb.from('users').select('id,username,role,full_name').eq('username',username).eq('password_hash',hash).single();
+  // Şifre artık sunucuda (veritabanı fonksiyonunda) kontrol ediliyor; tabloya doğrudan erişim yok
+  const{data,error}=await sb.rpc('mk_login',{p_username:username,p_password:password});
 
   if(error||!data){
-    errEl.textContent='❌ Kullanıcı adı veya şifre hatalı.';
+    errEl.textContent=error?'❌ Sunucuya ulaşılamadı: '+error.message:'❌ Kullanıcı adı veya şifre hatalı.';
     btn.disabled=false;
     btn.textContent='Giriş Yap';
     return;
   }
 
-  // Session kaydet
-  const session={id:data.id,username:data.username,role:data.role,fullName:data.full_name||data.username,ts:Date.now()};
+  // Oturum: sunucunun verdiği token ile (rol ve kimlik her istekte sunucuda yeniden doğrulanır)
+  const session={token:data.token,id:data.id,username:data.username,role:data.role,fullName:data.fullName,ts:Date.now()};
   localStorage.setItem('mk_session',JSON.stringify(session));
 
   redirectAfterLogin(data.role);
@@ -100,7 +94,8 @@ async function doLogin(){
 
 function redirectAfterLogin(role){
   const next=new URLSearchParams(window.location.search).get('next');
-  if(next) window.location.href=next;
+  // Sadece site içi adreslere yönlendir (başka siteye yönlendirme açığını kapatır)
+  if(next&&next.startsWith('/')&&!next.startsWith('//')) window.location.href=next;
   else if(role==='admin') window.location.href='/admin';
   else window.location.href='/teacher';
 }
@@ -108,7 +103,7 @@ function redirectAfterLogin(role){
 function getSession(){
   try{
     const s=JSON.parse(localStorage.getItem('mk_session')||'null');
-    if(!s)return null;
+    if(!s||!s.token){localStorage.removeItem('mk_session');return null;}  // eski (token'sız) oturumlar geçersiz
     // 24 saat geçerli
     if(Date.now()-s.ts>86400000){localStorage.removeItem('mk_session');return null;}
     return s;
