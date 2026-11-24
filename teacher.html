@@ -23,6 +23,14 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#1a1a2e;color:#fff;m
 .quiz-card.selected{border-color:var(--accent);background:#1e1e3f;}
 .quiz-card h3{font-size:.9rem;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .quiz-card p{font-size:.75rem;color:#888;}
+.quiz-card{position:relative;}
+.quiz-card h3{padding-right:26px;}
+.quiz-card-del{position:absolute;top:8px;right:8px;background:none;border:none;color:#666;cursor:pointer;font-size:.9rem;padding:2px 5px;border-radius:6px;line-height:1;}
+.quiz-card-del:hover{color:#fff;background:var(--red);}
+.summary-head{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.summary-head .quiz-summary-title{flex:1;margin-bottom:0;}
+.summary-del{background:none;border:1px solid #3a3a5a;color:#aaa;padding:4px 10px;border-radius:8px;cursor:pointer;font-size:.78rem;}
+.summary-del:hover{color:#fff;border-color:var(--red);background:var(--red);}
 .main-editor{flex:1;padding:24px;overflow-y:auto;display:flex;flex-direction:column;gap:16px;}
 .editor-header{display:flex;gap:10px;align-items:center;}
 .quiz-title-input{flex:1;background:var(--card);border:2px solid #2a2a4a;color:#fff;padding:10px 16px;border-radius:10px;font-size:1.1rem;outline:none;transition:border-color .2s;}
@@ -217,26 +225,30 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#1a1a2e;color:#fff;m
         🏐 FIVB Voleybol Kuralları 2025-2028
         <span class="lib-badge">40 Soru</span>
       </button>
-      <div class="randomize-row">
-        <label>Kaç soru oynansın?</label>
-        <select class="q-count-select" id="builtin-q-count">
-          <option value="10">10 soru (rastgele)</option>
-          <option value="15">15 soru (rastgele)</option>
-          <option value="20">20 soru (rastgele)</option>
-          <option value="40" selected>Tümü (40 soru)</option>
-        </select>
-      </div>
     </div>
 
     <!-- LOADED QUIZ SUMMARY -->
     <div id="quiz-summary-card" class="quiz-summary-card">
-      <div class="quiz-summary-title" id="summary-title">—</div>
+      <div class="summary-head">
+        <div class="quiz-summary-title" id="summary-title">—</div>
+        <button class="summary-del" id="summary-del" onclick="deleteCurrentFromSummary()">🗑 Sil</button>
+      </div>
       <div class="quiz-summary-stats">
         <div class="stat-pill">Toplam: <span id="summary-total">0</span> soru</div>
         <div class="stat-pill">Çoktan seçmeli: <span id="summary-mc">0</span></div>
         <div class="stat-pill">D/Y: <span id="summary-tf">0</span></div>
         <div class="stat-pill">Eşleştirme: <span id="summary-matching">0</span></div>
         <div class="stat-pill">Sıralama: <span id="summary-ordering">0</span></div>
+      </div>
+      <div class="randomize-row">
+        <label for="play-q-count">Kaç soru oynansın?</label>
+        <select class="q-count-select" id="play-q-count"><option value="all">Tümü</option></select>
+      </div>
+      <div class="randomize-row">
+        <label style="display:flex;align-items:center;gap:7px;cursor:pointer">
+          <input type="checkbox" id="play-shuffle" checked>
+          🔀 Soruları karışık sırayla sor (aynı tür art arda gelmez)
+        </label>
       </div>
       <span class="editor-toggle" onclick="toggleEditor()">✏️ Soruları düzenle / görüntüle</span>
     </div>
@@ -446,6 +458,7 @@ function renderQuizList(){
   if(!qs.length){ el.innerHTML='<p style="font-size:.82rem;color:#666">Henüz quiz yok.<br>Yukarıdan yeni quiz oluştur.</p>'; return; }
   el.innerHTML = qs.map(q=>`
     <div class="quiz-card ${q.id===currentQuizId?'selected':''}" onclick="loadQuiz('${q.id}')">
+      <button class="quiz-card-del" title="Bu quizi sil" onclick="event.stopPropagation();deleteQuizById('${q.id}')">🗑</button>
       <h3>${esc(q.title||'İsimsiz Quiz')}</h3>
       <p>${q.questions.length} soru</p>
     </div>`).join('');
@@ -468,15 +481,13 @@ function shuffleArray(arr){
 function loadBuiltinLibrary(key){
   const lib=BUILTIN_LIBS[key];
   if(!lib)return;
-  const countVal=parseInt(document.getElementById('builtin-q-count').value)||40;
-  let qs=lib.questions;
-  if(countVal<qs.length) qs=shuffleArray(qs).slice(0,countVal);
+  // Havuzun tamamı yüklenir; kaç soru oynanacağı oyun başlarken seçilir (tüm quizler için aynı)
   currentQuizId='q_builtin_'+key+'_'+Date.now();
-  questionDefs=qs.map(q=>({...q}));
+  questionDefs=lib.questions.map(q=>({...q}));
   renderQuestions(); // gizli editörü yeni quiz ile eşitle (eski kartlar soruları ezmesin)
-  document.getElementById('quiz-title').value=lib.title+(countVal<lib.questions.length?` (${countVal} soru)`:'');
+  document.getElementById('quiz-title').value=lib.title;
   document.getElementById('btn-start-game').disabled=false;
-  updateSummaryCard(lib.title+(countVal<lib.questions.length?` — ${countVal} soru`:''));
+  updateSummaryCard(lib.title);
   toast(`✅ ${questionDefs.length} soru yüklendi`);
 }
 
@@ -484,11 +495,90 @@ function updateSummaryCard(title){
   const card=document.getElementById('quiz-summary-card');
   card.classList.add('visible');
   document.getElementById('summary-title').textContent=title||'Yüklü Quiz';
+  updateSummaryStats();
+}
+
+function updateSummaryStats(){
+  const cnt=t=>questionDefs.filter(q=>q.type===t).length;
   document.getElementById('summary-total').textContent=questionDefs.length;
-  document.getElementById('summary-mc').textContent=questionDefs.filter(q=>q.type==='mc').length;
-  document.getElementById('summary-tf').textContent=questionDefs.filter(q=>q.type==='tf').length;
-  document.getElementById('summary-matching').textContent=questionDefs.filter(q=>q.type==='matching').length;
-  document.getElementById('summary-ordering').textContent=questionDefs.filter(q=>q.type==='ordering').length;
+  document.getElementById('summary-mc').textContent=cnt('mc');
+  document.getElementById('summary-tf').textContent=cnt('tf');
+  document.getElementById('summary-matching').textContent=cnt('matching');
+  document.getElementById('summary-ordering').textContent=cnt('ordering');
+  refreshCountOptions();
+}
+
+// "Kaç soru oynansın?" seçeneklerini yüklü quizin soru sayısına göre üretir
+function refreshCountOptions(){
+  const sel=document.getElementById('play-q-count');
+  if(!sel)return;
+  const n=questionDefs.length, prev=sel.value;
+  const steps=[5,10,15,20,25,30,40,50,75,100].filter(x=>x<n);
+  sel.innerHTML=steps.map(x=>`<option value="${x}">${x} soru (rastgele)</option>`).join('')
+    +`<option value="all">Tümü (${n} soru)</option>`;
+  sel.value=[...sel.options].some(o=>o.value===prev)?prev:'all';
+}
+
+// Oyun için soru listesi: "Tümü" → sırayla hepsi; sayı seçildiyse → rastgele o kadar soru.
+// Kayıtlı quiz değişmez, her oyunda yeniden seçilir.
+function pickQuestionsForGame(){
+  const cardVisible=document.getElementById('quiz-summary-card').classList.contains('visible');
+  const sel=document.getElementById('play-q-count');
+  const k=cardVisible&&sel?parseInt(sel.value,10):NaN;
+  const shuffleBox=document.getElementById('play-shuffle');
+  const doShuffle=!shuffleBox||shuffleBox.checked;
+  let qs;
+  if(!k||k>=questionDefs.length){
+    qs=[...questionDefs];
+  } else {
+    // havuzdaki tür oranlarını koruyarak rastgele k soru seç; karıştırma kapalıysa orijinal sıralarını koru
+    qs=proportionalSample(questionDefs,k).map(i=>questionDefs[i]);
+  }
+  if(doShuffle) qs=mixQuestionTypes(qs);
+  return qs.map(q=>({...q}));
+}
+
+// Havuzdan k soru seçer; her türden havuzdaki oranına göre soru alınır
+// (ör. 40 soruluk FIVB'den 10 soru → 5 çoktan seçmeli, 2 D/Y, 2 eşleştirme, 1 sıralama).
+// Seçilen soruların havuzdaki indekslerini artan sırada döndürür.
+function proportionalSample(arr,k){
+  const groups={};
+  arr.forEach((q,i)=>{(groups[q.type]=groups[q.type]||[]).push(i);});
+  const types=Object.keys(groups), n=arr.length, quota={}, rem=[];
+  let used=0;
+  types.forEach(t=>{
+    const exact=groups[t].length*k/n;
+    quota[t]=Math.floor(exact); used+=quota[t];
+    rem.push([t,exact-quota[t],Math.random()]);
+  });
+  rem.sort((a,b)=>(b[1]-a[1])||(a[2]-b[2]));       // en büyük küsurat önce, eşitlikte rastgele
+  for(let i=0;used<k&&i<rem.length;i++,used++) quota[rem[i][0]]++;
+  const idx=[];
+  types.forEach(t=>idx.push(...shuffleArray(groups[t]).slice(0,quota[t])));
+  return idx.sort((a,b)=>a-b);
+}
+
+// Soruları karıştırır ve mümkün olduğunca aynı türün art arda gelmesini engeller.
+// Her türden kalan soru sayısıyla ağırlıklı rastgele seçim yapılır; bir tür diğerlerinin
+// toplamından fazla kalırsa (yoksa sonda yığılacaksa) o tür zorunlu seçilir.
+function mixQuestionTypes(arr){
+  const groups={};
+  shuffleArray(arr).forEach(q=>{(groups[q.type]=groups[q.type]||[]).push(q);});
+  const out=[]; let last=null, remaining=arr.length;
+  while(remaining>0){
+    const types=Object.keys(groups).filter(t=>groups[t].length);
+    let cand=types.filter(t=>t!==last);
+    if(!cand.length) cand=types; // sadece tek tür kaldıysa art arda gelmesi kaçınılmaz
+    const forced=cand.find(t=>groups[t].length>remaining-groups[t].length);
+    let pick=forced;
+    if(!pick){
+      const total=cand.reduce((s,t)=>s+groups[t].length,0);
+      let r=Math.random()*total;
+      pick=cand.find(t=>(r-=groups[t].length)<0)||cand[cand.length-1];
+    }
+    out.push(groups[pick].pop()); last=pick; remaining--;
+  }
+  return out;
 }
 
 function toggleEditor(){
@@ -548,17 +638,46 @@ async function saveQuiz(){
   toast('✅ Quiz kaydedildi (hesabına)');
 }
 
-async function deleteQuiz(){
-  if(!confirm('Bu quizi silmek istiyor musun?'))return;
+async function deleteQuiz(){ await deleteQuizById(currentQuizId); }
+
+// Kütüphanedeki (kayıtlı) bir quizi kalıcı olarak siler
+async function deleteQuizById(id){
+  const quiz=quizCache.find(q=>q.id===id);
+  if(!quiz)return;
+  if(!confirm(`"${quiz.title||'İsimsiz Quiz'}" (${quiz.questions.length} soru) kalıcı olarak silinsin mi?`))return;
   try{
-    await deleteQuizRemote(currentQuizId);
+    await deleteQuizRemote(id);
   }catch(e){
     console.error(e);
     toast('❌ Silinemedi: '+(e.message||e),6000);
     return;
   }
-  quizCache=quizCache.filter(q=>q.id!==currentQuizId);
-  newQuiz(); toast('🗑 Quiz silindi');
+  quizCache=quizCache.filter(q=>q.id!==id);
+  if(id===currentQuizId) resetToEmpty();
+  renderQuizList();
+  toast('🗑 Quiz silindi');
+}
+
+// Özet karttaki "Sil": kayıtlıysa kütüphaneden siler, kaydedilmemişse yüklenen soruları temizler
+async function deleteCurrentFromSummary(){
+  if(quizCache.some(q=>q.id===currentQuizId)){ await deleteQuizById(currentQuizId); return; }
+  if(!confirm(`Kaydedilmemiş ${questionDefs.length} soru ekrandan kaldırılsın mı?`))return;
+  resetToEmpty();
+  renderQuizList();
+  toast('🗑 Yüklenen sorular kaldırıldı');
+}
+
+// Ekranı boş hale getirir (yeni quiz kimliği, soru yok, özet kart gizli)
+function resetToEmpty(){
+  currentQuizId='q_'+Date.now();
+  questionDefs=[];
+  renderQuestions();
+  document.getElementById('quiz-title').value='';
+  document.getElementById('btn-del-quiz').style.display='none';
+  document.getElementById('btn-start-game').disabled=true;
+  document.getElementById('quiz-summary-card').classList.remove('visible');
+  document.getElementById('editor-section').classList.remove('open');
+  document.querySelector('.editor-toggle').textContent='✏️ Soruları düzenle / görüntüle';
 }
 
 // ========== QUESTION EDITOR ==========
@@ -643,6 +762,8 @@ function renderQuestions(){
       ${typeBody}`;
     container.appendChild(div);
   });
+  // Soru eklenip silindiğinde özet ve "kaç soru" seçeneklerini güncel tut
+  updateSummaryStats();
 }
 
 function syncFromDOM(){
@@ -686,17 +807,23 @@ async function startLobby(){
   const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code=''; for(let i=0;i<6;i++)code+=chars[Math.floor(Math.random()*chars.length)];
   // create
+  const gameQuestions=pickQuestionsForGame();
   const{data,error}=await sb.from('rooms').insert({
     code,phase:'lobby',current_question:-1,
-    questions:questionDefs,
-    settings:{title,questionCount:questionDefs.length}
+    questions:gameQuestions,
+    settings:{title,questionCount:gameQuestions.length,poolSize:questionDefs.length}
   }).select().single();
   if(error){toast('❌ '+error.message);document.getElementById('btn-start-game').disabled=false;return;}
   currentRoom=data; participants=[]; answerCounts={}; answersByOption={};
   // lobby UI
   document.getElementById('lobby-pin').textContent=code;
   document.getElementById('lobby-quiz-name').textContent=title;
-  document.getElementById('lobby-quiz-count').textContent=questionDefs.length+' soru';
+  const shuffled=document.getElementById('play-shuffle')?.checked!==false;
+  document.getElementById('lobby-quiz-count').textContent=
+    (gameQuestions.length<questionDefs.length
+      ? `${gameQuestions.length} soru (${questionDefs.length} soruluk havuzdan rastgele)`
+      : gameQuestions.length+' soru')
+    +(shuffled?' · karışık sıra':' · kayıtlı sıra');
   const joinUrl=window.location.origin+'/student';
   document.getElementById('lobby-qr').src=`https://api.qrserver.com/v1/create-qr-code/?size=130x130&data=${encodeURIComponent(joinUrl+'?pin='+code)}`;
   document.getElementById('lobby-url').textContent=new URL(joinUrl).host+'/student';
