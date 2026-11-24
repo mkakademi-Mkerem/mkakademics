@@ -38,7 +38,7 @@ tr:hover td{background:rgba(255,255,255,.02);}
 .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;}
 .badge-admin{background:rgba(224,64,251,.2);color:#e040fb;border:1px solid rgba(224,64,251,.3);}
 .badge-teacher{background:rgba(19,104,206,.2);color:#5b9cf6;border:1px solid rgba(19,104,206,.3);}
-.btn-del{background:none;border:1px solid #3a3a5a;color:#888;padding:5px 12px;border-radius:7px;cursor:pointer;font-size:.78rem;transition:all .2s;}
+.btn-del{background:none;border:1px solid #3a3a5a;color:#888;padding:5px 12px;border-radius:7px;cursor:pointer;font-size:.78rem;transition:all .2s;white-space:nowrap;}
 .btn-del:hover{border-color:var(--red);color:var(--red);}
 .btn-del:disabled{opacity:.3;cursor:not-allowed;}
 .empty-row td{text-align:center;color:#555;padding:32px;}
@@ -55,6 +55,25 @@ tr:hover td{background:rgba(255,255,255,.02);}
 .btn-secondary{padding:10px 18px;background:#2a2a4a;color:#ccc;border:none;border-radius:10px;cursor:pointer;font-size:.88rem;}
 .btn-secondary:hover{background:#3a3a5a;}
 @media(max-width:600px){.form-row{grid-template-columns:1fr 1fr;}.form-row .btn-add{grid-column:1/-1;width:100%;}}
+.main{max-width:1040px;}
+.count-link{background:none;border:none;color:#5b9cf6;cursor:pointer;font-size:.85rem;text-decoration:underline;padding:0;}
+.count-link:disabled{color:#555;text-decoration:none;cursor:default;}
+.quiz-tools{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;}
+.quiz-tools select,.quiz-tools input{background:#0f0f23;border:2px solid #2a2a4a;color:#fff;padding:8px 12px;border-radius:10px;font-size:.85rem;outline:none;}
+.quiz-tools input{flex:1;min-width:180px;}
+.type-pill{display:inline-block;font-size:.68rem;padding:2px 7px;border-radius:6px;margin:1px 2px;font-weight:700;}
+.t-mc{background:rgba(19,104,206,.3);color:#8ab4f8;}
+.t-tf{background:rgba(38,137,12,.3);color:#86efac;}
+.t-matching{background:rgba(216,158,0,.3);color:#fcd34d;}
+.t-ordering{background:rgba(226,27,60,.3);color:#fca5a5;}
+.orphan{color:#d89e00;font-size:.8rem;}
+.view-box{max-width:760px;max-height:86vh;overflow-y:auto;}
+.vq{background:#0f0f23;border-radius:10px;padding:10px 12px;margin-bottom:8px;font-size:.85rem;}
+.vq-head{display:flex;gap:8px;align-items:center;margin-bottom:6px;color:#888;font-size:.75rem;}
+.vq-text{margin-bottom:6px;color:#eee;}
+.vq-opt{display:inline-block;padding:2px 8px;border-radius:6px;margin:2px;background:rgba(255,255,255,.06);font-size:.78rem;}
+.vq-opt.ok{background:rgba(38,137,12,.35);}
+.vq-row{font-size:.8rem;color:#ccc;padding:2px 0;}
 </style>
 </head>
 <body>
@@ -97,14 +116,47 @@ tr:hover td{background:rgba(255,255,255,.02);}
           <th>Ad Soyad</th>
           <th>Kullanıcı Adı</th>
           <th>Rol</th>
+          <th>Quiz / Soru</th>
           <th>Eklenme</th>
           <th>İşlem</th>
         </tr>
       </thead>
       <tbody id="users-tbody">
+        <tr class="empty-row"><td colspan="6">Yükleniyor…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section-title" style="margin-top:36px">📚 Tüm Soru Havuzları (<span id="quiz-count">0</span>)</div>
+  <div class="quiz-tools">
+    <select id="quiz-owner-filter" onchange="renderQuizzes()"><option value="">Tüm öğretmenler</option></select>
+    <input id="quiz-search" placeholder="🔍 Quiz adında ara…" oninput="renderQuizzes()">
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Quiz</th>
+          <th>Öğretmen</th>
+          <th>Soru</th>
+          <th>Güncelleme</th>
+          <th>İşlem</th>
+        </tr>
+      </thead>
+      <tbody id="quizzes-tbody">
         <tr class="empty-row"><td colspan="5">Yükleniyor…</td></tr>
       </tbody>
     </table>
+  </div>
+</div>
+
+<!-- Quiz görüntüleme modal -->
+<div id="view-modal" class="modal">
+  <div class="modal-box view-box">
+    <h3 id="view-title">—</h3>
+    <div id="view-meta" style="font-size:.8rem;color:#888;margin:-12px 0 14px"></div>
+    <div id="view-body"></div>
+    <div class="modal-actions"><button class="btn-secondary" onclick="closeViewModal()">Kapat</button></div>
   </div>
 </div>
 
@@ -132,47 +184,137 @@ tr:hover td{background:rgba(255,255,255,.02);}
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let currentSession=null;
 let pwTargetId=null;
+let allUsers=[], allQuizzes=[];
 
-// Auth guard
+// Auth guard: token zorunlu; rol sunucuda (mk_me) doğrulanır, tarayıcıdaki role güvenilmez
 (function(){
   try{
     const s=JSON.parse(localStorage.getItem('mk_session')||'null');
-    if(!s||Date.now()-s.ts>86400000){localStorage.removeItem('mk_session');window.location.href='/login?next=/admin';return;}
+    if(!s||!s.token||Date.now()-s.ts>86400000){localStorage.removeItem('mk_session');window.location.href='/login?next=/admin';return;}
     if(s.role!=='admin'){window.location.href='/teacher';return;}
     currentSession=s;
     document.getElementById('topbar-name').textContent=s.fullName||s.username;
-  }catch{window.location.href='/login?next=/admin';}
+  }catch{localStorage.removeItem('mk_session');window.location.href='/login?next=/admin';}
 })();
 
-async function sha256(str){
-  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));
-  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+const ERR={YETKI_YOK:'Bu işlem için yönetici yetkisi gerekli',KULLANICI_ADI_KISA:'Kullanıcı adı en az 2 karakter olmalı.',
+  SIFRE_KISA:'Şifre en az 4 karakter olmalı.',KENDINI_SILEMEZSIN:'Kendinizi silemezsiniz.',BULUNAMADI:'Kayıt bulunamadı.',
+  BULUNAMADI_VEYA_YETKI_YOK:'Kayıt bulunamadı.',OTURUM_GECERSIZ:'Oturum sona erdi.'};
+
+async function rpc(fn,args={}){
+  const{data,error}=await sb.rpc(fn,{p_token:currentSession.token,...args});
+  if(error){
+    const m=(error.message||'').trim();
+    if(m==='OTURUM_GECERSIZ'){
+      localStorage.removeItem('mk_session');toast('🔒 Oturum sona erdi');
+      setTimeout(()=>window.location.href='/login?next=/admin',1200);
+    } else if(m==='YETKI_YOK'){
+      localStorage.removeItem('mk_session');setTimeout(()=>window.location.href='/login',1200);
+    }
+    const e=new Error(ERR[m]||(error.code==='23505'?'Bu kullanıcı adı zaten alınmış.':m));
+    e.code=error.code; throw e;
+  }
+  return data;
 }
 
-async function loadUsers(){
-  const{data,error}=await sb.from('users').select('*').order('created_at',{ascending:true});
-  if(error){toast('❌ Kullanıcılar yüklenemedi');return;}
-  renderUsers(data);
+function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+const TYPE_LABEL={mc:'Çoktan seçmeli',tf:'D/Y',matching:'Eşleştirme',ordering:'Sıralama'};
+
+async function loadAll(){
+  try{
+    const[u,q]=await Promise.all([rpc('mk_admin_users'),rpc('mk_admin_quizzes')]);
+    allUsers=u||[]; allQuizzes=q||[];
+  }catch(e){toast('❌ '+e.message);return;}
+  renderUsers(); renderOwnerFilter(); renderQuizzes();
 }
 
-function renderUsers(users){
+function renderUsers(){
+  const users=allUsers;
   document.getElementById('user-count').textContent=users.length;
   const tbody=document.getElementById('users-tbody');
-  if(!users.length){tbody.innerHTML='<tr class="empty-row"><td colspan="5">Henüz kullanıcı yok.</td></tr>';return;}
+  if(!users.length){tbody.innerHTML='<tr class="empty-row"><td colspan="6">Henüz kullanıcı yok.</td></tr>';return;}
   tbody.innerHTML=users.map(u=>{
-    const isSelf=u.username===currentSession.username;
+    const isSelf=u.id===currentSession.id;
     const date=new Date(u.created_at).toLocaleDateString('tr-TR');
     return `<tr>
-      <td>${u.full_name||'—'}</td>
-      <td><code>${u.username}</code></td>
-      <td><span class="badge badge-${u.role}">${u.role==='admin'?'Admin':'Öğretmen'}</span></td>
+      <td>${esc(u.full_name||'—')}</td>
+      <td><code>${esc(u.username)}</code></td>
+      <td><span class="badge badge-${u.role==='admin'?'admin':'teacher'}">${u.role==='admin'?'Admin':'Öğretmen'}</span></td>
+      <td><button class="count-link" onclick="filterByOwner('${u.id}')" ${u.quiz_count?'':'disabled'}>${u.quiz_count} quiz / ${u.question_count} soru</button></td>
       <td>${date}</td>
       <td style="display:flex;gap:6px;">
-        <button class="btn-del" onclick="openPwModal('${u.id}','${u.username}')">🔑 Şifre</button>
-        <button class="btn-del" onclick="deleteUser('${u.id}','${u.username}')" ${isSelf?'disabled title="Kendinizi silemezsiniz"':''}>🗑 Sil</button>
+        <button class="btn-del" onclick="openPwModal('${u.id}')">🔑 Şifre</button>
+        <button class="btn-del" onclick="deleteUser('${u.id}')" ${isSelf?'disabled title="Kendinizi silemezsiniz"':''}>🗑 Sil</button>
       </td>
     </tr>`;
   }).join('');
+}
+
+function renderOwnerFilter(){
+  const sel=document.getElementById('quiz-owner-filter'), prev=sel.value;
+  const hasOrphan=allQuizzes.some(q=>!q.owner_username);
+  sel.innerHTML='<option value="">Tüm öğretmenler</option>'
+    +allUsers.map(u=>`<option value="${u.id}">${esc(u.full_name||u.username)} (${u.quiz_count})</option>`).join('')
+    +(hasOrphan?'<option value="__orphan">Sahipsiz (silinmiş hesap)</option>':'');
+  sel.value=[...sel.options].some(o=>o.value===prev)?prev:'';
+}
+
+function filterByOwner(id){
+  document.getElementById('quiz-owner-filter').value=id;
+  renderQuizzes();
+  document.getElementById('quiz-owner-filter').scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+function renderQuizzes(){
+  const owner=document.getElementById('quiz-owner-filter').value;
+  const s=document.getElementById('quiz-search').value.trim().toLocaleLowerCase('tr');
+  const list=allQuizzes.filter(q=>(!owner||(owner==='__orphan'?!q.owner_username:q.owner_id===owner))
+                                 &&(!s||(q.title||'').toLocaleLowerCase('tr').includes(s)));
+  document.getElementById('quiz-count').textContent=allQuizzes.length;
+  const tbody=document.getElementById('quizzes-tbody');
+  if(!list.length){tbody.innerHTML='<tr class="empty-row"><td colspan="5">Gösterilecek quiz yok.</td></tr>';return;}
+  tbody.innerHTML=list.map(q=>{
+    const types=Object.entries(q.types||{}).map(([t,c])=>`<span class="type-pill t-${esc(t)}">${c} ${esc(TYPE_LABEL[t]||t)}</span>`).join('');
+    return `<tr>
+      <td>${esc(q.title)}</td>
+      <td>${q.owner_username?esc(q.owner_name):'<span class="orphan">Sahipsiz (silinmiş hesap)</span>'}</td>
+      <td><b>${q.question_count}</b><br>${types}</td>
+      <td>${new Date(q.updated_at).toLocaleString('tr-TR',{dateStyle:'short',timeStyle:'short'})}</td>
+      <td style="display:flex;gap:6px;">
+        <button class="btn-del" onclick="viewQuiz('${esc(q.id)}')">👁 Görüntüle</button>
+        <button class="btn-del" onclick="deleteQuiz('${esc(q.id)}')">🗑 Sil</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function viewQuiz(id){
+  let q;
+  try{ q=await rpc('mk_admin_quiz',{p_id:id}); }catch(e){toast('❌ '+e.message);return;}
+  document.getElementById('view-title').textContent=q.title;
+  document.getElementById('view-meta').textContent=`${q.owner_name||'Sahipsiz'} · ${q.questions.length} soru`;
+  document.getElementById('view-body').innerHTML=q.questions.map((x,i)=>{
+    let body='';
+    if(x.type==='mc'||x.type==='tf'){
+      const opts=x.type==='tf'?['Doğru','Yanlış']:(x.options||[]);
+      body=opts.map((o,j)=>`<span class="vq-opt ${j===x.correct?'ok':''}">${esc(o)}</span>`).join('');
+    } else if(x.type==='matching'){
+      body=(x.pairs||[]).map(p=>`<div class="vq-row">${esc(p.l)} → <b>${esc(p.r)}</b></div>`).join('');
+    } else if(x.type==='ordering'){
+      body=(x.items||[]).map((it,j)=>`<div class="vq-row">${j+1}. ${esc(it)}</div>`).join('');
+    }
+    return `<div class="vq"><div class="vq-head"><b>${i+1}.</b><span class="type-pill t-${esc(x.type)}">${esc(TYPE_LABEL[x.type]||x.type)}</span><span>${x.time||20} sn</span></div>
+      <div class="vq-text">${esc(x.text)}</div>${body}</div>`;
+  }).join('');
+  document.getElementById('view-modal').classList.add('open');
+}
+function closeViewModal(){document.getElementById('view-modal').classList.remove('open');}
+
+async function deleteQuiz(id){
+  const q=allQuizzes.find(x=>x.id===id); if(!q)return;
+  if(!confirm(`"${q.title}" (${q.owner_name||'sahipsiz'}, ${q.question_count} soru) kalıcı olarak silinsin mi?`))return;
+  try{ await rpc('mk_delete_quiz',{p_id:id}); }catch(e){toast('❌ '+e.message);return;}
+  toast('🗑 Quiz silindi'); loadAll();
 }
 
 async function addUser(){
@@ -185,32 +327,30 @@ async function addUser(){
   if(!username||username.length<2){errEl.textContent='Kullanıcı adı en az 2 karakter olmalı.';return;}
   if(!password||password.length<4){errEl.textContent='Şifre en az 4 karakter olmalı.';return;}
   btn.disabled=true;
-  const hash=await sha256(password);
-  const{error}=await sb.from('users').insert({username,password_hash:hash,role:'teacher',full_name:fullname||null});
+  try{
+    await rpc('mk_admin_create_user',{p_username:username,p_password:password,p_full_name:fullname||null,p_role:'teacher'});
+  }catch(e){ errEl.textContent='❌ '+e.message; btn.disabled=false; return; }
   btn.disabled=false;
-  if(error){
-    if(error.code==='23505')errEl.textContent='❌ Bu kullanıcı adı zaten alınmış.';
-    else errEl.textContent='❌ '+error.message;
-    return;
-  }
   document.getElementById('new-fullname').value='';
   document.getElementById('new-username').value='';
   document.getElementById('new-password').value='';
   toast('✅ '+username+' eklendi!');
-  loadUsers();
+  loadAll();
 }
 
-async function deleteUser(id,username){
-  if(!confirm(username+' kullanıcısını silmek istediğinizden emin misiniz?'))return;
-  const{error}=await sb.from('users').delete().eq('id',id);
-  if(error){toast('❌ Silinemedi');return;}
-  toast('🗑 '+username+' silindi');
-  loadUsers();
+async function deleteUser(id){
+  const u=allUsers.find(x=>x.id===id); if(!u)return;
+  const extra=u.quiz_count?`\n\nBu hocanın ${u.quiz_count} quizi silinmez; "Sahipsiz" olarak listede kalır, isterseniz ayrıca silebilirsiniz.`:'';
+  if(!confirm(u.username+' kullanıcısını silmek istediğinizden emin misiniz?'+extra))return;
+  try{ await rpc('mk_admin_delete_user',{p_user_id:id}); }catch(e){toast('❌ '+e.message);return;}
+  toast('🗑 '+u.username+' silindi');
+  loadAll();
 }
 
-function openPwModal(id,username){
+function openPwModal(id){
+  const u=allUsers.find(x=>x.id===id); if(!u)return;
   pwTargetId=id;
-  document.getElementById('pw-modal-user').textContent=username;
+  document.getElementById('pw-modal-user').textContent=u.username;
   document.getElementById('pw-new').value='';
   document.getElementById('err-pw').textContent='';
   document.getElementById('pw-modal').classList.add('open');
@@ -221,10 +361,9 @@ async function confirmChangePw(){
   const newPw=document.getElementById('pw-new').value.trim();
   const errEl=document.getElementById('err-pw');
   if(!newPw||newPw.length<4){errEl.textContent='Şifre en az 4 karakter olmalı.';return;}
-  const hash=await sha256(newPw);
-  const{error}=await sb.from('users').update({password_hash:hash}).eq('id',pwTargetId);
-  if(error){errEl.textContent='❌ '+error.message;return;}
-  toast('🔑 Şifre güncellendi!');
+  try{ await rpc('mk_admin_set_password',{p_user_id:pwTargetId,p_password:newPw}); }
+  catch(e){ errEl.textContent='❌ '+e.message; return; }
+  toast('🔑 Şifre güncellendi! (Kullanıcının açık oturumları kapatıldı)');
   closePwModal();
 }
 
@@ -236,12 +375,13 @@ function toast(msg){
   _toastTimer=setTimeout(()=>el.classList.remove('show'),3000);
 }
 
-function logout(){
+async function logout(){
+  try{ if(currentSession) await sb.rpc('mk_logout',{p_token:currentSession.token}); }catch{}
   localStorage.removeItem('mk_session');
   window.location.href='/login';
 }
 
-loadUsers();
+if(currentSession) loadAll();
 </script>
 </body>
 </html>
