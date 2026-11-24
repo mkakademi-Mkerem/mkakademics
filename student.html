@@ -64,6 +64,8 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#1a1a2e;color:#fff;}
 .match-item{padding:11px 10px;border-radius:12px;border:2px solid #2a2a4a;background:#16213e;color:#fff;font-size:.88rem;text-align:center;cursor:pointer;transition:all .15s;user-select:none;word-break:break-word;}
 .match-item:active{transform:scale(.96);}
 .match-item.selected{border-color:var(--accent);background:rgba(224,64,251,.18);box-shadow:0 0 10px rgba(224,64,251,.4);}
+.m-badge{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,.18);font-size:.72rem;font-weight:800;margin-right:6px;vertical-align:middle;}
+.play-hint{font-size:.78rem;color:#aaa;line-height:1.35;text-align:center;}
 .match-item.paired-0{border-color:var(--red);background:rgba(226,27,60,.18);}
 .match-item.paired-1{border-color:var(--blue);background:rgba(19,104,206,.18);}
 .match-item.paired-2{border-color:var(--yellow);background:rgba(216,158,0,.18);}
@@ -268,8 +270,8 @@ async function handleRoom(rawRoom){
     }
   } else if(room.phase==='results'){
     if(pendingFeedback){
-      const{isCorrect,earned}=pendingFeedback; pendingFeedback=null;
-      showFeedback(isCorrect,earned,true);
+      const{isCorrect,earned,partial,timedOut}=pendingFeedback; pendingFeedback=null;
+      showFeedback(isCorrect,earned,!timedOut,partial);
     } else if(!hasAnswered){
       showFeedback(false,0,false);
     }
@@ -290,29 +292,32 @@ function showQuestion(room){
     // Reset matching state
     matchLeftSelected=null; matchPairs={};
     const leftItems=(q.pairs||[]).map(p=>p.l);
-    matchRightItems=[...(q.pairs||[]).map(p=>p.r)].sort(()=>Math.random()-.5);
+    matchRightItems=shuffleNoIdentity((q.pairs||[]).map(p=>p.r));
     grid.className=''; grid.style.display='contents';
     grid.innerHTML=`<div class="matching-ui">
+      <div class="play-hint">Önce <b>soldan</b> bir madde, sonra <b>sağdan</b> eşini seç. Eşleşenler aynı numara ve renkte görünür. Değiştirmek için eşleşmiş maddeye tekrar dokun.</div>
       <div class="match-cols">
         <div class="match-col">
           <div class="match-col-label">Sol</div>
-          ${leftItems.map((item,i)=>`<div class="match-item" id="ml${i}" onclick="matchSelectLeft(${i})">${esc(item)}</div>`).join('')}
+          ${leftItems.map((item,i)=>`<div class="match-item" id="ml${i}" onclick="matchSelectLeft(${i})"></div>`).join('')}
         </div>
         <div class="match-col">
           <div class="match-col-label">Sağ</div>
-          ${matchRightItems.map((item,i)=>`<div class="match-item" id="mr${i}" onclick="matchSelectRight(${i})">${esc(item)}</div>`).join('')}
+          ${matchRightItems.map((item,i)=>`<div class="match-item" id="mr${i}" onclick="matchSelectRight(${i})"></div>`).join('')}
         </div>
       </div>
       <div class="match-submit-wrap">
         <button class="action-submit-btn" id="match-submit-btn" disabled onclick="submitMatching()">Gönder ✓</button>
       </div>
     </div>`;
+    _renderMatch();
   } else if(q.type==='ordering'){
     // Reset ordering state
     orderSelected=[];
-    orderItems=[...(q.items||[])].sort(()=>Math.random()-.5);
+    orderItems=shuffleNoIdentity(q.items||[]);
     grid.className=''; grid.style.display='contents';
     grid.innerHTML=`<div class="ordering-ui">
+      <div class="play-hint">Maddelere <b>doğru sırayla</b> dokun: ilk dokunduğun 1. olur. Geri almak için numaralı maddeye tekrar dokun.</div>
       <div class="order-items-grid" id="order-grid">
         ${orderItems.map((item,i)=>`<div class="order-item-btn" id="oi${i}" onclick="tapOrderItem(${i})">${esc(item)}</div>`).join('')}
       </div>
@@ -337,40 +342,47 @@ function showQuestion(room){
 }
 
 // ========== MATCHING INTERACTION ==========
-function matchSelectLeft(idx){
-  if(hasAnswered)return;
-  // If already paired, unpair first
-  if(matchPairs[idx]!==undefined){
-    const rIdx=matchPairs[idx];
-    delete matchPairs[idx];
-    document.getElementById('ml'+idx).className='match-item';
-    document.getElementById('mr'+rIdx).className='match-item';
-    matchLeftSelected=null;
-    _updateMatchSubmit(); return;
+// Karıştırır; mümkünse orijinal (doğru) sırayla aynı kalmasına izin vermez
+function shuffleNoIdentity(arr){
+  const a=[...arr];
+  if(a.length<2)return a;
+  for(let tries=0;tries<20;tries++){
+    for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+    if(a.some((v,i)=>v!==arr[i]))return a;
   }
-  matchLeftSelected=idx;
-  document.querySelectorAll('[id^="ml"]').forEach(el=>{
-    const i=+el.id.slice(2);
-    if(matchPairs[i]===undefined) el.className='match-item'+(i===idx?' selected':'');
+  return a;
+}
+
+// Eşleştirme: renk ve numara SOL maddenin sırasına bağlı → her çift benzersiz ve sabit görünür
+function _renderMatch(){
+  const q=currentRoom.questions[currentQIdx];
+  (q.pairs||[]).forEach((p,i)=>{
+    const el=document.getElementById('ml'+i); if(!el)return;
+    const paired=matchPairs[i]!==undefined;
+    el.className='match-item'+(paired?' paired-'+(i%8):'')+(matchLeftSelected===i?' selected':'');
+    el.innerHTML=`<span class="m-badge">${i+1}</span>${esc(p.l)}`;
+  });
+  const rightToLeft={};
+  for(const [lk,rv] of Object.entries(matchPairs)) rightToLeft[rv]=+lk;
+  matchRightItems.forEach((txt,r)=>{
+    const el=document.getElementById('mr'+r); if(!el)return;
+    const l=rightToLeft[r];
+    el.className='match-item'+(l!==undefined?' paired-'+(l%8):'');
+    el.innerHTML=(l!==undefined?`<span class="m-badge">${l+1}</span>`:'')+esc(txt);
   });
 }
+function matchSelectLeft(idx){
+  if(hasAnswered)return;
+  if(matchPairs[idx]!==undefined){ delete matchPairs[idx]; matchLeftSelected=null; } // eşleşmişse çöz
+  else matchLeftSelected=(matchLeftSelected===idx?null:idx);
+  _renderMatch(); _updateMatchSubmit();
+}
 function matchSelectRight(rIdx){
-  if(hasAnswered||matchLeftSelected===null)return;
-  // If right item already paired to something, unpair it first
-  for(const [lk,rv] of Object.entries(matchPairs)){
-    if(rv===rIdx){
-      delete matchPairs[lk];
-      document.getElementById('ml'+lk).className='match-item';
-      document.getElementById('mr'+rIdx).className='match-item';
-    }
-  }
-  const colorIdx=Object.keys(matchPairs).length;
-  matchPairs[matchLeftSelected]=rIdx;
-  document.getElementById('ml'+matchLeftSelected).className=`match-item paired-${colorIdx}`;
-  document.getElementById('mr'+rIdx).className=`match-item paired-${colorIdx}`;
-  matchLeftSelected=null;
-  document.querySelectorAll('[id^="ml"]').forEach(el=>{ if(!el.className.includes('paired')) el.className='match-item'; });
-  _updateMatchSubmit();
+  if(hasAnswered)return;
+  // Bu sağ madde başka bir sola bağlıysa önce çöz
+  for(const [lk,rv] of Object.entries(matchPairs)) if(rv===rIdx) delete matchPairs[lk];
+  if(matchLeftSelected!==null){ matchPairs[matchLeftSelected]=rIdx; matchLeftSelected=null; }
+  _renderMatch(); _updateMatchSubmit();
 }
 function _updateMatchSubmit(){
   const q=currentRoom.questions[currentQIdx];
@@ -418,25 +430,31 @@ function startStudentTimer(seconds){
     bar.style.width=pct+'%';
     tEl.textContent=rem;
     bar.style.background=rem<=5?'#e21b3c':rem<=10?'#d89e00':'var(--accent)';
-    if(rem<=0){clearInterval(timerIv);timerIv=null;if(!hasAnswered){hasAnswered=true;_recordAnswer('—',false,0);}}
+    if(rem<=0){clearInterval(timerIv);timerIv=null;if(!hasAnswered)autoSubmitOnTimeout();}
     else rem--;
   }
   tick(); timerIv=setInterval(tick,1000);
 }
 
+// Süre dolduğunda: eşleştirme/sıralamada yapılmış kısmi cevap varsa onu gönder (kısmi puan alır)
+function autoSubmitOnTimeout(){
+  const q=currentRoom&&currentRoom.questions?currentRoom.questions[currentQIdx]:null;
+  if(q&&q.type==='matching'&&Object.keys(matchPairs).length){submitMatching();return;}
+  if(q&&q.type==='ordering'&&orderSelected.length){submitOrdering();return;}
+  hasAnswered=true;_recordAnswer('—',false,0);
+}
+
 // ========== ANSWER ==========
-async function _recordAnswer(answerStr,isCorrect,earned){
+// partial: eşleştirme/sıralama için {got,total,label} — kısmen doğru cevaplar puanı skora eklenir
+async function _recordAnswer(answerStr,isCorrect,earned,partial=null){
   const timeTaken=Date.now()-qStart;
   // Not: supabase-js sorgu nesnelerinde .catch() yok (sadece then) — hata {error} olarak döner
   try{
-    if(isCorrect){
-      myScore+=earned; myStreak++;
+    if(earned>0) myScore+=earned;
+    myStreak=isCorrect?myStreak+1:0;   // seri sadece tam doğruda devam eder
+    {
       const{error}=await sb.from('participants').update({score:myScore,streak:myStreak}).eq('id',myId);
       if(error)console.error('Puan güncellenemedi',error);
-    } else {
-      myStreak=0;
-      const{error}=await sb.from('participants').update({streak:0}).eq('id',myId);
-      if(error)console.error('Seri sıfırlanamadı',error);
     }
     const{error:aErr}=await sb.from('answers').insert({
       room_code:roomCode,participant_id:myId,question_index:currentQIdx,
@@ -445,7 +463,7 @@ async function _recordAnswer(answerStr,isCorrect,earned){
     });
     if(aErr)console.error('Cevap kaydedilemedi',aErr);
   }catch(e){console.error(e);}
-  pendingFeedback={isCorrect,earned};
+  pendingFeedback={isCorrect,earned,partial,timedOut:answerStr==='—'};
   showScreen('answered');
 }
 
@@ -498,7 +516,7 @@ async function submitMatching(){
     const maxP=1000,minP=100;
     earned=Math.round((maxP-(maxP-minP)*Math.min(timeTaken/timeLimit,1))*ratio*Math.min(1+(myStreak*.1),2.0));
   }
-  await _recordAnswer(isCorrect?'✓':'✗',isCorrect,earned);
+  await _recordAnswer(isCorrect?'✓':'✗',isCorrect,earned,{got:correctCount,total:correctPairs.length,label:'eşleştirme'});
 }
 
 async function submitOrdering(){
@@ -521,20 +539,21 @@ async function submitOrdering(){
     const maxP=1000,minP=100;
     earned=Math.round((maxP-(maxP-minP)*Math.min(timeTaken/timeLimit,1))*ratio*Math.min(1+(myStreak*.1),2.0));
   }
-  await _recordAnswer(isCorrect?'✓':'✗',isCorrect,earned);
+  await _recordAnswer(isCorrect?'✓':'✗',isCorrect,earned,{got:correctPos,total:correctItems.length,label:'sıra'});
 }
 
-function showFeedback(isCorrect,earned,answered){
+function showFeedback(isCorrect,earned,answered,partial=null){
   const fb=document.getElementById('screen-feedback');
+  const isPartial=answered&&!isCorrect&&partial&&partial.got>0;
   if(!answered) fb.className='screen active timeout';
-  else fb.className='screen active '+(isCorrect?'correct':'wrong');
-  document.getElementById('fb-icon').textContent=!answered?'⏰':isCorrect?'✅':'❌';
+  else fb.className='screen active '+(isCorrect?'correct':isPartial?'timeout':'wrong');
+  document.getElementById('fb-icon').textContent=!answered?'⏰':isCorrect?'✅':isPartial?'🟡':'❌';
   const v=document.getElementById('fb-verdict');
-  v.className='fb-verdict '+(isCorrect?'c':!answered?'t':'w');
-  v.textContent=!answered?'Süre Doldu!':isCorrect?'Doğru!':'Yanlış!';
-  document.getElementById('fb-pts').textContent=isCorrect?'+'+earned.toLocaleString()+' puan':'0 puan';
+  v.className='fb-verdict '+(isCorrect?'c':(!answered||isPartial)?'t':'w');
+  v.textContent=!answered?'Süre Doldu!':isCorrect?'Doğru!':isPartial?'Kısmen Doğru!':'Yanlış!';
+  document.getElementById('fb-pts').textContent=earned>0?'+'+earned.toLocaleString()+' puan':'0 puan';
   document.getElementById('fb-streak').textContent=myStreak>1?'🔥 '+myStreak+' Seri!':myStreak===1?'⭐ İlk Puan':'';
-  document.getElementById('fb-rank').textContent='';
+  document.getElementById('fb-rank').textContent=(answered&&partial)?`${partial.got} / ${partial.total} ${partial.label} doğru`:'';
   showScreen('feedback');
 }
 
