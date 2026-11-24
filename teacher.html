@@ -169,6 +169,37 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#1a1a2e;color:#fff;m
 @keyframes fadeUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
 .spacer{flex:1;}
 
+/* MINI QUIZ PICKER */
+.pick-open-btn{display:block;margin-top:10px;background:#16213e;border:1px dashed var(--accent);color:var(--accent);padding:8px 12px;border-radius:9px;cursor:pointer;font-size:.82rem;font-weight:600;}
+.pick-open-btn:hover{background:rgba(224,64,251,.12);}
+.pick-box{max-width:780px;height:86vh;max-height:86vh;display:flex;flex-direction:column;gap:10px;overflow:hidden;}
+.pick-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;}
+.pick-head h3{font-size:1.05rem;}
+.pick-pool{font-size:.8rem;color:#888;}
+.pick-search{background:#0f0f23;border:1px solid #2a2a4a;color:#fff;padding:9px 12px;border-radius:9px;font-size:.88rem;outline:none;}
+.pick-search:focus{border-color:var(--accent);}
+.pick-filters{display:flex;gap:6px;flex-wrap:wrap;}
+.pick-chip{background:#0f0f23;border:1px solid #2a2a4a;color:#aaa;padding:5px 11px;border-radius:20px;cursor:pointer;font-size:.78rem;}
+.pick-chip.on{border-color:var(--accent);color:#fff;background:rgba(224,64,251,.15);}
+.pick-actions-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.pick-count{margin-left:auto;font-size:.85rem;font-weight:700;color:#fff;}
+.pick-count small{font-weight:400;color:#888;}
+.pick-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:5px;padding-right:4px;min-height:120px;}
+.pick-row{display:flex;align-items:flex-start;gap:9px;background:#0f0f23;border:1px solid #2a2a4a;border-radius:9px;padding:8px 10px;cursor:pointer;font-size:.85rem;line-height:1.35;}
+.pick-row.on{border-color:var(--accent);background:rgba(224,64,251,.10);}
+.pick-row input{margin-top:2px;accent-color:#e040fb;flex-shrink:0;}
+.pick-num{color:#666;font-size:.75rem;min-width:22px;flex-shrink:0;margin-top:1px;}
+.pick-type{font-size:.66rem;padding:2px 7px;border-radius:6px;flex-shrink:0;font-weight:700;margin-top:1px;white-space:nowrap;}
+.pick-type.t-mc{background:rgba(19,104,206,.3);color:#8ab4f8;}
+.pick-type.t-tf{background:rgba(38,137,12,.3);color:#86efac;}
+.pick-type.t-matching{background:rgba(216,158,0,.3);color:#fcd34d;}
+.pick-type.t-ordering{background:rgba(226,27,60,.3);color:#fca5a5;}
+.pick-text{flex:1;color:#ddd;}
+.pick-empty{color:#666;font-size:.85rem;text-align:center;padding:20px;}
+.pick-footer{display:flex;flex-direction:column;gap:8px;border-top:1px solid #2a2a4a;padding-top:10px;}
+.pick-footer .quiz-title-input{font-size:.95rem;padding:8px 12px;}
+.pick-footer-btns{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;}
+
 /* AUTO ADVANCE / HOST CONTROL */
 .auto-delay-label{display:flex;flex-direction:column;gap:4px;font-size:.75rem;color:#aaa;margin-top:8px;}
 .auto-next{width:100%;max-width:580px;display:flex;flex-direction:column;gap:6px;align-items:center;}
@@ -250,6 +281,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#1a1a2e;color:#fff;m
           🔀 Soruları karışık sırayla sor (aynı tür art arda gelmez)
         </label>
       </div>
+      <button class="pick-open-btn" onclick="openPickModal()">☑️ Havuzdan soru seçerek mini quiz oluştur</button>
       <span class="editor-toggle" onclick="toggleEditor()">✏️ Soruları düzenle / görüntüle</span>
     </div>
 
@@ -270,6 +302,32 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#1a1a2e;color:#fff;m
     </div>
 
     <button class="btn-start-game" id="btn-start-game" onclick="startLobby()" disabled>🚀 Oyunu Başlat</button>
+  </div>
+</div>
+
+<!-- ===== MINI QUIZ: HAVUZDAN SORU SEÇİMİ ===== -->
+<div id="pick-modal" class="import-modal">
+  <div class="import-box pick-box">
+    <div class="pick-head">
+      <h3>☑️ Havuzdan soru seç</h3>
+      <span class="pick-pool" id="pick-pool-title"></span>
+    </div>
+    <input id="pick-search" class="pick-search" placeholder="🔍 Soru metninde ara…" oninput="renderPickList()">
+    <div class="pick-filters" id="pick-filters"></div>
+    <div class="pick-actions-row">
+      <button class="btn-secondary" onclick="pickSelectVisible(true)">Görünenlerin hepsini seç</button>
+      <button class="btn-secondary" onclick="pickSelectVisible(false)">Görünenleri bırak</button>
+      <span class="pick-count" id="pick-count">0 soru seçili</span>
+    </div>
+    <div class="pick-list" id="pick-list"></div>
+    <div class="pick-footer">
+      <input id="pick-title" class="quiz-title-input" placeholder="Mini quiz adı">
+      <div class="pick-footer-btns">
+        <button class="btn-secondary" onclick="closePickModal()">İptal</button>
+        <button class="btn-secondary" id="pick-start-btn" onclick="startWithPicked()" disabled>🚀 Kaydetmeden başlat</button>
+        <button class="btn-primary" id="pick-save-btn" onclick="savePickedAsQuiz()" disabled>💾 Mini quiz olarak kaydet</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -382,19 +440,41 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#1a1a2e;color:#fff;m
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ===== AUTH GUARD =====
+// Oturum sunucuda tutulur; burada sadece token saklanır. Yetki her istekte veritabanında kontrol edilir.
 let mkSession = null;
 (function(){
   try{
     const s=JSON.parse(localStorage.getItem('mk_session')||'null');
-    if(!s||Date.now()-s.ts>86400000){localStorage.removeItem('mk_session');window.location.href='/login?next=/teacher';return;}
+    if(!s||!s.token||Date.now()-s.ts>86400000){localStorage.removeItem('mk_session');window.location.href='/login?next=/teacher';return;}
     mkSession=s;
     // Üst bar kullanıcı adı
     const el=document.getElementById('topbar-user-name');
     if(el) el.textContent=s.fullName||s.username;
-  }catch{window.location.href='/login?next=/teacher';}
+  }catch{localStorage.removeItem('mk_session');window.location.href='/login?next=/teacher';}
 })();
 
-function mkLogout(){localStorage.removeItem('mk_session');window.location.href='/login';}
+function sessionExpired(){
+  localStorage.removeItem('mk_session');
+  toast('🔒 Oturumun sona erdi, tekrar giriş yap',4000);
+  setTimeout(()=>{window.location.href='/login?next=/teacher';},1500);
+}
+
+// Sunucu fonksiyonu çağırır; token'ı ekler, oturum düşmüşse girişe yönlendirir
+async function mkRpc(fn,args={}){
+  const{data,error}=await sb.rpc(fn,{p_token:mkSession.token,...args});
+  if(error){
+    if(/OTURUM_GECERSIZ/.test(error.message||'')){ sessionExpired(); }
+    const msg={YETKI_YOK:'Bu işlem için yetkin yok',BULUNAMADI_VEYA_YETKI_YOK:'Quiz bulunamadı ya da sana ait değil',
+               QUIZ_COK_BUYUK:'Quiz çok büyük',OTURUM_GECERSIZ:'Oturum sona erdi'}[(error.message||'').trim()];
+    throw new Error(msg||error.message);
+  }
+  return data;
+}
+
+async function mkLogout(){
+  try{ if(mkSession&&mkSession.token) await sb.rpc('mk_logout',{p_token:mkSession.token}); }catch{}
+  localStorage.removeItem('mk_session');window.location.href='/login';
+}
 // =====================
 
 // State
@@ -406,50 +486,45 @@ let questionDefs = [];
 // Otomatik geçiş durumu (yalnızca öğretmen kontrol eder)
 let resultsDelay = 8, gamePaused = false, autoTimer = null, isLoadingNext = false;
 
-// ========== QUIZ LIBRARY (Supabase 'quizzes' tablosu) ==========
-// Quizler artık tarayıcıda değil veritabanında, öğretmenin hesabına bağlı tutulur.
+// ========== QUIZ LIBRARY (sunucu fonksiyonları üzerinden) ==========
+// Her öğretmen sadece kendi quizlerini görür/değiştirir; bu kural veritabanında uygulanır.
 let quizCache = [];
 function loadQuizzes(){ return quizCache; }
 
 async function fetchQuizzes(){
-  const{data,error}=await sb.from('quizzes')
-    .select('id,title,questions,updated_at')
-    .eq('owner_id',mkSession.id)
-    .order('updated_at',{ascending:true});
-  if(error) throw error;
-  quizCache=(data||[]).map(r=>({id:r.id,title:r.title,questions:Array.isArray(r.questions)?r.questions:[],updatedAt:r.updated_at}));
+  const data=await mkRpc('mk_list_quizzes');
+  quizCache=(data||[]).map(r=>({id:r.id,title:r.title,questions:Array.isArray(r.questions)?r.questions:[],updatedAt:r.updatedAt}));
   return quizCache;
 }
 
 async function upsertQuizRemote(quiz){
-  const{error}=await sb.from('quizzes').upsert({
-    id:quiz.id, owner_id:mkSession.id, title:quiz.title,
-    questions:quiz.questions, updated_at:quiz.updatedAt
-  });
-  if(error) throw error;
+  await mkRpc('mk_save_quiz',{p_id:quiz.id,p_title:quiz.title,p_questions:quiz.questions});
 }
 
 async function deleteQuizRemote(id){
-  const{error}=await sb.from('quizzes').delete().eq('id',id).eq('owner_id',mkSession.id);
-  if(error) throw error;
+  await mkRpc('mk_delete_quiz',{p_id:id});
 }
 
-// Bu tarayıcıda eskiden kaydedilmiş quizleri bir kereye mahsus veritabanına taşır.
-// Yerel kopya silinmez (yedek olarak kalır).
+// Bu tarayıcıda eskiden (hesaba bağlanmadan) kaydedilmiş quizleri, öğretmen onaylarsa hesabına taşır.
+// Aynı tarayıcıyı birden fazla hoca kullanmış olabileceği için ONAY sorulur. Yerel kopya silinmez.
 async function migrateLocalQuizzes(){
   const flag='mk_quizzes_migrated_'+mkSession.id;
   if(localStorage.getItem(flag)) return 0;
   let local=[];
   try{ local=JSON.parse(localStorage.getItem('mk_quizzes')||'[]'); }catch{}
-  const rows=(Array.isArray(local)?local:[])
-    .filter(q=>q&&q.id&&Array.isArray(q.questions)&&q.questions.length)
-    .map(q=>({id:q.id,owner_id:mkSession.id,title:q.title||'İsimsiz Quiz',questions:q.questions,updated_at:q.updatedAt||new Date().toISOString()}));
-  if(rows.length){
-    const{error}=await sb.from('quizzes').upsert(rows,{onConflict:'id',ignoreDuplicates:true});
-    if(error) throw error;
+  const rows=(Array.isArray(local)?local:[]).filter(q=>q&&q.id&&Array.isArray(q.questions)&&q.questions.length);
+  if(!rows.length){ localStorage.setItem(flag,'1'); return 0; }
+  const names=rows.slice(0,5).map(q=>'• '+(q.title||'İsimsiz Quiz')).join('\n')+(rows.length>5?`\n… ve ${rows.length-5} tane daha`:'');
+  if(!confirm(`Bu tarayıcıda hesaba bağlı olmayan ${rows.length} eski quiz bulundu:\n\n${names}\n\nBunlar senin mi? Hesabına aktarılsın mı?`)){
+    localStorage.setItem(flag,'1'); return 0;
+  }
+  let moved=0;
+  for(const q of rows){
+    const r=await mkRpc('mk_save_quiz',{p_id:q.id,p_title:q.title||'İsimsiz Quiz',p_questions:q.questions,p_only_if_new:true});
+    if(r&&!r.skipped) moved++;
   }
   localStorage.setItem(flag,'1');
-  return rows.length;
+  return moved;
 }
 
 function renderQuizList(){
@@ -495,6 +570,7 @@ function loadBuiltinLibrary(key){
   document.getElementById('quiz-title').value=lib.title;
   document.getElementById('btn-start-game').disabled=false;
   updateSummaryCard(lib.title);
+  document.getElementById('play-q-count').value='all'; // farklı quiz açılınca önceki 'kaç soru' seçimi taşınmasın
   toast(`✅ ${questionDefs.length} soru yüklendi`);
 }
 
@@ -588,6 +664,100 @@ function mixQuestionTypes(arr){
   return out;
 }
 
+// ========== MINI QUIZ: HAVUZDAN SORU SEÇİMİ ==========
+const TYPE_LABEL={mc:'Çoktan seçmeli',tf:'D/Y',matching:'Eşleştirme',ordering:'Sıralama'};
+const TYPE_SHORT={mc:'Ç',tf:'D/Y',matching:'E',ordering:'S'};
+let pickSel=new Set(), pickFilter='all';
+let gameOverride=null; // "Kaydetmeden başlat" için tek seferlik soru listesi
+
+function poolTitle(){ return (document.getElementById('summary-title').textContent||'').trim()||document.getElementById('quiz-title').value.trim()||'Soru havuzu'; }
+
+function openPickModal(){
+  syncFromDOM();
+  if(!questionDefs.length){toast('⚠️ Önce bir soru havuzu yükle');return;}
+  pickSel=new Set(); pickFilter='all';
+  document.getElementById('pick-search').value='';
+  document.getElementById('pick-title').value='';
+  document.getElementById('pick-pool-title').textContent=`${poolTitle()} · ${questionDefs.length} soru`;
+  renderPickFilters(); renderPickList();
+  document.getElementById('pick-modal').classList.add('open');
+}
+function closePickModal(){ document.getElementById('pick-modal').classList.remove('open'); }
+
+function pickVisibleIdx(){
+  const s=document.getElementById('pick-search').value.trim().toLocaleLowerCase('tr');
+  return questionDefs.map((_,i)=>i).filter(i=>{
+    const q=questionDefs[i];
+    if(pickFilter!=='all'&&q.type!==pickFilter) return false;
+    if(s&&!(q.text||'').toLocaleLowerCase('tr').includes(s)) return false;
+    return true;
+  });
+}
+function setPickFilter(t){ pickFilter=t; renderPickFilters(); renderPickList(); }
+function renderPickFilters(){
+  const counts={}; questionDefs.forEach(q=>counts[q.type]=(counts[q.type]||0)+1);
+  const types=['all',...['mc','tf','matching','ordering'].filter(t=>counts[t])];
+  document.getElementById('pick-filters').innerHTML=types.map(t=>
+    `<button class="pick-chip ${pickFilter===t?'on':''}" onclick="setPickFilter('${t}')">${t==='all'?'Tümü':TYPE_LABEL[t]} (${t==='all'?questionDefs.length:counts[t]})</button>`).join('');
+}
+function renderPickList(){
+  const vis=pickVisibleIdx();
+  document.getElementById('pick-list').innerHTML=vis.length?vis.map(i=>{
+    const q=questionDefs[i], on=pickSel.has(i);
+    return `<label class="pick-row ${on?'on':''}">
+      <input type="checkbox" ${on?'checked':''} onchange="pickToggle(${i},this)">
+      <span class="pick-num">${i+1}</span>
+      <span class="pick-type t-${q.type}">${TYPE_LABEL[q.type]||q.type}</span>
+      <span class="pick-text">${esc(q.text||'(metin yok)')}</span>
+    </label>`;}).join(''):'<p class="pick-empty">Eşleşen soru yok.</p>';
+  updatePickCount();
+}
+function pickToggle(i,el){
+  if(el.checked) pickSel.add(i); else pickSel.delete(i);
+  el.closest('.pick-row').classList.toggle('on',el.checked);
+  updatePickCount();
+}
+function pickSelectVisible(on){
+  pickVisibleIdx().forEach(i=>on?pickSel.add(i):pickSel.delete(i));
+  renderPickList();
+}
+function pickedQuestions(){
+  return [...pickSel].sort((a,b)=>a-b).map(i=>({...questionDefs[i]}));
+}
+function updatePickCount(){
+  const qs=pickedQuestions(), n=qs.length;
+  const by={}; qs.forEach(q=>by[q.type]=(by[q.type]||0)+1);
+  const detail=Object.entries(by).map(([t,c])=>`${c} ${TYPE_SHORT[t]||t}`).join(' · ');
+  document.getElementById('pick-count').innerHTML=`${n} soru seçili${n?` <small>(${detail})</small>`:''}`;
+  document.getElementById('pick-save-btn').disabled=!n;
+  document.getElementById('pick-start-btn').disabled=!n;
+  document.getElementById('pick-title').placeholder=`${poolTitle()} – Mini (${n} soru)`;
+}
+
+async function savePickedAsQuiz(){
+  const qs=pickedQuestions(); if(!qs.length) return;
+  const title=document.getElementById('pick-title').value.trim()||`${poolTitle()} – Mini (${qs.length} soru)`;
+  const quiz={id:'q_'+Date.now(),title,questions:qs,updatedAt:new Date().toISOString()};
+  const btn=document.getElementById('pick-save-btn'); btn.disabled=true;
+  try{
+    await upsertQuizRemote(quiz);
+  }catch(e){
+    console.error(e); toast('❌ Kaydedilemedi: '+(e.message||e),6000); btn.disabled=false; return;
+  }
+  quizCache.push(quiz);
+  closePickModal();
+  loadQuiz(quiz.id);
+  toast(`✅ "${title}" kütüphaneye kaydedildi (${qs.length} soru)`,4000);
+}
+
+async function startWithPicked(){
+  const qs=pickedQuestions(); if(!qs.length) return;
+  const title=document.getElementById('pick-title').value.trim()||`${poolTitle()} – seçili ${qs.length} soru`;
+  gameOverride={title,questions:qs};
+  closePickModal();
+  await startLobby();
+}
+
 function toggleEditor(){
   const sec=document.getElementById('editor-section');
   const isOpen=sec.classList.toggle('open');
@@ -619,6 +789,7 @@ function loadQuiz(id){
   document.getElementById('btn-del-quiz').style.display='';
   document.getElementById('btn-start-game').disabled=questionDefs.length===0;
   updateSummaryCard(quiz.title||'Quiz');
+  document.getElementById('play-q-count').value='all'; // farklı quiz açılınca önceki 'kaç soru' seçimi taşınmasın
   document.getElementById('editor-section').classList.remove('open');
   document.querySelector('.editor-toggle').textContent='✏️ Soruları düzenle / görüntüle';
   renderQuizList();
@@ -804,14 +975,18 @@ async function startLobby(){
   syncFromDOM();
   if(!questionDefs.length){toast('⚠️ Soru ekle');return;}
   document.getElementById('btn-start-game').disabled=true;
-  const title=document.getElementById('quiz-title').value.trim()||'Quiz';
+  const override=gameOverride; gameOverride=null;   // "Kaydetmeden başlat" ile gelen seçili sorular (tek seferlik)
+  const title=override?override.title:(document.getElementById('quiz-title').value.trim()||'Quiz');
   // cleanup
   await sb.from('rooms').delete().lt('created_at',new Date(Date.now()-86400000).toISOString());
   // code
   const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code=''; for(let i=0;i<6;i++)code+=chars[Math.floor(Math.random()*chars.length)];
   // create
-  const gameQuestions=pickQuestionsForGame();
+  const shuffleOn=document.getElementById('play-shuffle')?.checked!==false;
+  const gameQuestions=override
+    ? (shuffleOn?mixQuestionTypes(override.questions):override.questions).map(q=>({...q}))
+    : pickQuestionsForGame();
   const{data,error}=await sb.from('rooms').insert({
     code,phase:'lobby',current_question:-1,
     questions:gameQuestions,
@@ -822,12 +997,13 @@ async function startLobby(){
   // lobby UI
   document.getElementById('lobby-pin').textContent=code;
   document.getElementById('lobby-quiz-name').textContent=title;
-  const shuffled=document.getElementById('play-shuffle')?.checked!==false;
   document.getElementById('lobby-quiz-count').textContent=
-    (gameQuestions.length<questionDefs.length
-      ? `${gameQuestions.length} soru (${questionDefs.length} soruluk havuzdan rastgele)`
-      : gameQuestions.length+' soru')
-    +(shuffled?' · karışık sıra':' · kayıtlı sıra');
+    (override
+      ? `${gameQuestions.length} soru (havuzdan elle seçildi)`
+      : gameQuestions.length<questionDefs.length
+        ? `${gameQuestions.length} soru (${questionDefs.length} soruluk havuzdan rastgele)`
+        : gameQuestions.length+' soru')
+    +(shuffleOn?' · karışık sıra':' · kayıtlı sıra');
   const joinUrl=window.location.origin+'/student';
   document.getElementById('lobby-qr').src=`https://api.qrserver.com/v1/create-qr-code/?size=130x130&data=${encodeURIComponent(joinUrl+'?pin='+code)}`;
   document.getElementById('lobby-url').textContent=new URL(joinUrl).host+'/student';
